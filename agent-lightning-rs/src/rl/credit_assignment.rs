@@ -1,0 +1,117 @@
+/// LightningRL Credit Assignment (Step 1 of the algorithm)
+///
+/// This module is responsible for distributing the return of an episode
+/// back to the individual transitions/actions.
+use crate::rl::transition::Transition;
+
+/// Assigns credit to each action in an episode.
+///
+/// According to the Agent Lightning paper, a simple uniform credit assignment
+/// can be very effective: assigning the total episode return to every action.
+pub fn assign_uniform_credit(episode: &mut [Transition]) {
+    let total_return: f64 = episode.iter().map(|t| t.total_reward()).sum();
+
+    for transition in episode.iter_mut() {
+        // Every token in the output of this transition gets the same total_return advantage
+        let n_tokens = transition.rewards.len();
+        transition.advantages = vec![total_return; n_tokens];
+    }
+}
+
+/// Assigns credit using discounted future returns (standard RL return calculation).
+///
+/// advantage_t = sum_{k=t}^{T} gamma^{k-t} * reward_k
+pub fn assign_discounted_credit(episode: &mut [Transition], gamma: f64) {
+    let mut running_return = 0.0;
+
+    // We iterate backwards through the entire sequence of steps in the episode
+    // Note: Since each transition might have multiple internal tokens/rewards,
+    // we need to handle that flat or nested. Here we treat each Transition as
+    // a single semantic unit for return calculation if needed, or per-token if rewards are per-token.
+
+    // The paper treats (Input, Output, Reward) as the unit.
+    // If rewards are per-token, we work on the flattened reward sequence.
+
+    let all_rewards: Vec<f64> = episode
+        .iter()
+        .flat_map(|t| t.rewards.iter())
+        .cloned()
+        .collect();
+    let n_total = all_rewards.len();
+    let mut all_advantages = vec![0.0; n_total];
+
+    for i in (0..n_total).rev() {
+        running_return = all_rewards[i] + gamma * running_return;
+        all_advantages[i] = running_return;
+    }
+
+    // Distribute back to transitions
+    let mut offset = 0;
+    for transition in episode.iter_mut() {
+        let n_tokens = transition.rewards.len();
+        transition.advantages = all_advantages[offset..offset + n_tokens].to_vec();
+        offset += n_tokens;
+    }
+}
+
+/// Advantage calculation using GAE (Generalized Advantage Estimation).
+/// Requires value estimates from a critic network.
+pub fn assign_gae_credit(
+    episode: &mut [Transition],
+    values: &[f64], // Value estimates for each step/token
+    gamma: f64,
+    lambda: f64,
+) {
+    let all_rewards: Vec<f64> = episode
+        .iter()
+        .flat_map(|t| t.rewards.iter())
+        .cloned()
+        .collect();
+    let n_total = all_rewards.len();
+    assert_eq!(
+        values.len(),
+        n_total,
+        "Values must match total number of reward steps"
+    );
+
+    let mut all_advantages = vec![0.0; n_total];
+    let mut gae = 0.0;
+
+    for i in (0..n_total).rev() {
+        let next_value = if i + 1 < n_total { values[i + 1] } else { 0.0 };
+        let delta = all_rewards[i] + gamma * next_value - values[i];
+        gae = delta + gamma * lambda * gae;
+        all_advantages[i] = gae;
+    }
+
+    // Distribute back to transitions
+    let mut offset = 0;
+    for transition in episode.iter_mut() {
+        let n_tokens = transition.rewards.len();
+        transition.advantages = all_advantages[offset..offset + n_tokens].to_vec();
+        offset += n_tokens;
+    }
+}
+
+/// Normalizes advantages across a batch of transitions for training stability.
+pub fn normalize_advantages(transitions: &mut [Transition]) {
+    let all_advs: Vec<f64> = transitions
+        .iter()
+        .flat_map(|t| t.advantages.iter())
+        .cloned()
+        .collect();
+    if all_advs.is_empty() {
+        return;
+    }
+
+    let n = all_advs.len() as f64;
+    let mean = all_advs.iter().sum::<f64>() / n;
+    let var = all_advs.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / n;
+    let std = (var + 1e-8).sqrt();
+
+    for transition in transitions.iter_mut() {
+        for adv in transition.advantages.iter_mut() {
+            *adv = (*adv - mean) / std;
+        }
+    }
+}
