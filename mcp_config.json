@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "agent-lightning-rs": {
+      "command": "cargo",
+      "args": [
+        "+stable-x86_64-pc-windows-gnu",
+        "run",
+        "--manifest-path",
+        "agent-lightning-rs/Cargo.toml",
+        "--bin",
+        "mcp-server",
+        "--release"
+      ],
+      "env": {
+        "PATH": "C:\\msys64\\mingw64\\bin;${PATH}"
+      },
+      "description": "Agent Lightning RS — RL training tools (PPO/GRPO/Hierarchical RL in Rust)"
+    }
+  }
+}

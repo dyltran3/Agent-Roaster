@@ -1,0 +1,73 @@
+# ─── Rust Build Artifacts ──────────────────────────────────────────────────────
+# Thư mục build của Cargo — KHÔNG nên commit, thường vài trăm MB
+target/
+**/*.rs.bk
+Cargo.lock
+
+# ─── IDE & Editor files ────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── OS Files ─────────────────────────────────────────────────────────────────
+.DS_Store
+ehthumbs.db
+Desktop.ini
+
+# ─── Model Checkpoints (có thể rất lớn) ───────────────────────────────────────
+*.ckpt
+*.bin
+*.weights
+checkpoints/
+models/saved/
+
+# ─── Log files ────────────────────────────────────────────────────────────────
+*.log
+logs/
+training_runs/
+
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+secrets.toml
+config.secret.toml
+
+# ─── Python (nếu thêm script hỗ trợ) ─────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# ─── MCP Server temp files ────────────────────────────────────────────────────
+mcp_sessions/
+.mcp_cache/
+
+# ─── Windows specific ─────────────────────────────────────────────────────────
+*.exe           # Binary outputs (nên build từ source)
+*.pdb
+
+# ─── Temporary / scratch files ────────────────────────────────────────────────
+tmp/
+temp/
+scratch/
+*.tmp
+*.bak
+
+# ─── KHÔNG ignore (nên commit) ────────────────────────────────────────────────
+# src/           ← Toàn bộ source code Rust
+# .cargo/        ← config.toml (linker config cho GNU toolchain)
+# Cargo.toml     ← Package manifest
+# README.md      ← Tài liệu
+# LICENSE        ← Giấy phép
+# mcp_server/    ← MCP server source
+# .gitignore     ← File này
