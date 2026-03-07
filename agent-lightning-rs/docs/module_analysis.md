@@ -1,86 +1,86 @@
-# Module Analysis: Agent Lightning (Rust)
+# Phân tích Module: Agent Lightning (Rust)
 
-This document provides a technical breakdown of all modules in the Agent Lightning project, their responsibilities, and how they interact to achieve efficient, disaggregated reinforcement learning for terminal devices.
-
----
-
-## 1. Core Engine (`src/core/`)
-
-The core engine provides the mathematical foundations without external dependencies.
-
-| Module          | Responsibility                                                                    | Real-time Optimization                                                      |
-| :-------------- | :-------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| `tensor.rs`     | Primitive multi-dimensional array operations, autograd, and parameter management. | SIMD-ready loops, cache-aligned row-major data, and pre-allocation support. |
-| `activation.rs` | Non-linear functions (ReLU, Softmax, Sigmoid).                                    | Vectorized batch processing to reduce function call overhead.               |
-| `loss.rs`       | Token-level and sequence-level loss functions (MSE, GRPO, REINFORCE).             | Minimal allocation during backprop.                                         |
-| `optimizer.rs`  | Weight update logic (Adam).                                                       | Efficient gradient accumulation.                                            |
-
-## 2. Reinforcement Learning Layer (`src/rl/`)
-
-Implements the Agent Lightning specific algorithms and data structures.
-
-| Module                 | Responsibility                                                                   | Role in Agent Lightning                          |
-| :--------------------- | :------------------------------------------------------------------------------- | :----------------------------------------------- |
-| `transition.rs`        | Defines the **Unified MDP Transition** (Input, Output, Rewards[], LogProbs[]).   | Foundations for reasoning-sequence optimization. |
-| `credit_assignment.rs` | Distributes global rewards into per-token advantages (Uniform, Discounted, GAE). | Step 1 of the LightningRL algorithm.             |
-| `lightning_rl.rs`      | Central orchestrator that manages policy and updates.                            | The "Brain" of the training server.              |
-| `ppo.rs` / `grpo.rs`   | Algorithm-specific token-level optimization logic.                               | Implement Step 2 (Policy Update).                |
-| `buffer.rs`            | Optimized memory for storing recent transitions.                                 | FIFO episode storage.                            |
-
-## 3. Disaggregated Layer (`src/lightning/`)
-
-Facilitates the split between the Agent (Client) and the Trainer (Server).
-
-| Module      | Responsibility                                                   | Key Feature                                     |
-| :---------- | :--------------------------------------------------------------- | :---------------------------------------------- |
-| `client.rs` | The "Execution" node on the terminal device. Traces transitions. | Lightweight, non-blocking asynchronous sensing. |
-| `server.rs` | The "Training" node. Receives traces and emits policy updates.   | Batch processing and versioning.                |
-| `reward.rs` | **AIR (Automatic Intermediate Rewarding)** logic.                | Translates tool signals into dense rewards.     |
-| `pomdp.rs`  | Shared types and interfaces for the message protocol.            | Zero-copy serialization potential.              |
-
-## 4. Training & Data Layer (`src/training/`)
-
-Handles the lifecycle of a training run.
-
-| Module             | Responsibility                                                        | Configuration                    |
-| :----------------- | :-------------------------------------------------------------------- | :------------------------------- |
-| `training_loop.rs` | Orchestrates the client-server interaction for local/remote training. | Configurable update intervals.   |
-| `dataset.rs`       | Support for offline RL and replay from saved JSON/CSV traces.         | Large-scale experience sampling. |
-| `config.rs`        | Hyperparameter management and CLI argument parsing.                   | Centralized control.             |
+Tài liệu này cung cấp bản phân tích kỹ thuật của toàn bộ các module trong dự án Agent Lightning, phân công trách nhiệm của chúng, và cách chúng tương tác để đạt được hiệu năng học tăng cường phân tán (disaggregated reinforcement learning) hiệu quả cho các thiết bị terminal.
 
 ---
 
-## 5. Architectural Interaction Flow
+## 1. Core Engine (Lõi Điện Toán) (`src/core/`)
 
-1. **Client** resets environment and starts an episode.
-2. For each step, **Client** performs inference and collects **Unified Transitions**.
-3. **RewardShaper (AIR)** adds intermediate signals based on internal state/tool results.
-4. **Client** sends `EpisodeDone` with full transition traces to **Server**.
-5. **Server** triggers **Credit Assignment** to calculate per-thread advantages.
-6. **Server** runs **LightningRL** update (Token-level PPO/GRPO).
-7. **Server** increments version and broadcasts updated weights back to **Client**.
+Core engine cung cấp các nền tảng toán học cơ sở mà không cần bất kỳ dependency (thư viện phụ thuộc) bên ngoài nào.
 
-## 6. Real-time Design Decisions
+| Module          | Trách nhiệm (Responsibility)                                                       | Tối ưu hóa Thời gian thực (Real-time Optimization)                                                             |
+| :-------------- | :--------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------- |
+| `tensor.rs`     | Các phép toán mảng đa chiều cơ sở, autograd (đạo hàm tự động), và quản lý tham số. | Vòng lặp hỗ trợ SIMD, dữ liệu ưu tiên hàng (row-major) chuẩn cache, và hỗ trợ cấp phát trước (pre-allocation). |
+| `activation.rs` | Các hàm phi tuyến tính (ReLU, Softmax, Sigmoid).                                   | Xử lý batch dạng vector để giảm cost gọi hàm (function call overhead).                                         |
+| `loss.rs`       | Các hàm mất mát cấp độ token và sequence (MSE, GRPO, REINFORCE).                   | Cấp phát tối thiểu (Minimal allocation) trong quá trình backprop.                                              |
+| `optimizer.rs`  | Logic cập nhật trọng số (Adam).                                                    | Tích lũy gradient (gradient accumulation) hiệu quả.                                                            |
 
-- **Zero-Dependency**: Maximizes portability to resource-constrained devices (embedded, edge terminals).
-- **Disaggregation**: Offloads heavy tensor computation (training) to a server while keeping the agent footprint minimal.
-- **Unified MDP**: Reduces the frequency of server-client communication by grouping reasoning steps.
+## 2. Reinforcement Learning Layer (Tầng Học Tăng Cường) (`src/rl/`)
 
-## 7. Real-time Optimizations Implemented
+Triển khai các thuật toán và cấu trúc dữ liệu đặc thù của Agent Lightning.
 
-- **Cache-Optimized MatMul**: RHS matrices are transposed or handled row-wise to ensure linear memory access in inner loops, significantly improving cache hit rates.
-- **Allocation-Free Softmax**: Optimized secondary pass across rows to compute exponentials and sums without creating intermediate `Vec<f64>` objects.
-- **In-place Linear Forward**: Bypasses general `matmul` matrix multiplication for a direct dot-product implementation that avoids redundant weight transpositions and temporary tensors.
-- **Minimal Clone Sequential Loop**: The neural network inference loop was refactored to minimize object ownership transfers and redundant cloning.
-- **Zero-Dependency SIMD Potential**: By keeping loops simple and data linear, the Rust compiler (`rustc`) is better able to apply auto-vectorization (SIMD) for modern CPUs on terminal devices.
+| Module                 | Trách nhiệm (Responsibility)                                                        | Vai trò trong Agent Lightning                                |
+| :--------------------- | :---------------------------------------------------------------------------------- | :----------------------------------------------------------- |
+| `transition.rs`        | Định nghĩa **Unified MDP Transition** (Input, Output, Rewards[], LogProbs[]).       | Nền tảng cho tối ưu hóa chuỗi suy luận (reasoning-sequence). |
+| `credit_assignment.rs` | Phân bổ reward tổng quát thành advantage cho từng token (Uniform, Discounted, GAE). | Bước 1 của thuật toán LightningRL.                           |
+| `lightning_rl.rs`      | Bộ điều phối trung tâm (Central orchestrator) quản lý policy và vòng cập nhật.      | Là bộ não ("Brain") của training server.                     |
+| `ppo.rs` / `grpo.rs`   | Logic tối ưu cấp độ token cho thuật toán cụ thể.                                    | Triển khai Bước 2 (Cập nhật Policy).                         |
+| `buffer.rs`            | Bộ nhớ tối ưu để lưu trữ các transition gần nhất.                                   | Lưu trữ episode theo chuẩn FIFO.                             |
 
-## 8. Development Environment Troubleshooting
+## 3. Disaggregated Layer (Tầng Phân Tán) (`src/lightning/`)
 
-### Windows Linker Issues (`link.exe` not found)
+Hỗ trợ việc phân tách giữa Agent (Client) và Trainer (Server).
 
-If you encounter `error: linker 'link.exe' not found` on Windows, it means Visual Studio C++ Build Tools are missing. You can either install them or switch to the GNU toolchain:
+| Module      | Trách nhiệm (Responsibility)                                                     | Tính năng chính (Key Feature)                            |
+| :---------- | :------------------------------------------------------------------------------- | :------------------------------------------------------- |
+| `client.rs` | Node "Execution" (thực thi) trên thiết bị terminal. Lấy dấu (trace) transitions. | Bắt tín hiệu bất đồng bộ, siêu nhẹ, non-blocking.        |
+| `server.rs` | Node "Training" (huấn luyện). Nhận các trace và phát đi bản cập nhật policy.     | Xử lý theo batch và quản lý version.                     |
+| `reward.rs` | Logic **AIR (Automatic Intermediate Rewarding)**.                                | Chuyển đổi tín hiệu hệ thống (tool) thành dense rewards. |
+| `pomdp.rs`  | Các type dùng chung và interface cho giao thức tin nhắn (message protocol).      | Tiềm năng serialization theo chuẩn zero-copy.            |
 
-**Solution (Switch to GNU Toolchain):**
+## 4. Training & Data Layer (Tầng Dữ Liệu & Huấn Luyện) (`src/training/`)
+
+Quản lý chu kỳ phân tách (lifecycle) của một phiên huấn luyện (training run).
+
+| Module             | Trách nhiệm (Responsibility)                                   | Cấu hình (Configuration)          |
+| :----------------- | :------------------------------------------------------------- | :-------------------------------- |
+| `training_loop.rs` | Điều phối tương tác client-server cho local/remote training.   | Thông số khoảng thời gian update. |
+| `dataset.rs`       | Hỗ trợ offline RL và replay/lặp lại từ các tệp trace JSON/CSV. | Sampling kinh nghiệm quy mô lớn.  |
+| `config.rs`        | Quản lý siêu tham số (Hyperparameter) và phân tích đối số CLI. | Quản lý tập trung.                |
+
+---
+
+## 5. Architectural Interaction Flow (Luồng Tương Tác Kiến Trúc)
+
+1. **Client** gọi reset môi trường và bắt đầu một episode.
+2. Với mỗi bước tính (step), **Client** làm inference và thu thập các **Unified Transitions**.
+3. **RewardShaper (AIR)** bổ sung các tín hiệu trung gian dựa trên trạng thái nội tại / kết quả của tool.
+4. **Client** gửi tín hiệu `EpisodeDone` kèm toàn bộ log trace của transition về cho **Server**.
+5. **Server** kích hoạt **Credit Assignment** để tính toán advantage cho từng luồng (thread).
+6. **Server** chạy bộ cập nhật **LightningRL** (Token-level PPO/GRPO).
+7. **Server** tăng version lên 1 bậc và phát sóng (broadcast) các trọng số (weights) đã cập nhật trả về cho **Client**.
+
+## 6. Real-time Design Decisions (Quyết Định Thiết Kế Dành Cho Thời Gian Thực)
+
+- **Zero-Dependency**: Tối đa hóa khả năng di động (portability) cho phần mềm để chạy trên các thiết bị hạn chế tài nguyên (nhúng, edge terminals).
+- **Disaggregation (Phân tán)**: Offload/Chuyển giao việc tính toán tensor nặng nhọc (training) lên một máy chủ trong khi vẫn giữ lại cực kỳ ít footprints cho agent.
+- **Unified MDP**: Giảm tần suất giao tiếp server-client bằng cách gộp nhóm (grouping) các chuỗi suy luận (reasoning steps).
+
+## 7. Real-time Optimizations Implemented (Các Tối Ưu Hóa Tốc Độ Đã Đưa Vào)
+
+- **Cache-Optimized MatMul**: Các ma trận phía bên phải (RHS) được transpose/chuyển vị hoặc xử lý theo luồng hàng (row-wise) để đảm bảo bộ nhớ tuyến tính trong inner loop, góp phần cải thiện vượt trội tỷ lệ cache hit.
+- **Allocation-Free Softmax**: Lượt xử lý thứ hai (secondary pass) tối ưu qua các hàng tính toán hàm số mũ (exponentials) và tổng mà không cần khởi tạo thêm các đối tượng `Vec<f64>` trung gian.
+- **In-place Linear Forward**: Vượt qua chu trình nhân ma trận chung (general matmul) bằng một thuật toán tính tích vô hướng trực tiếp (dot-product) tránh mọi vòng chuyển vị tham số thừa hay sử dụng tensor tạm.
+- **Minimal Clone Sequential Loop**: Neural network inference loop được cấu trúc lại nhằm giảm thiểu tối đa các yêu cầu chuyển nhượng/clone object trong runtime.
+- **Zero-Dependency SIMD Potential**: Thông qua tư duy giữ các vòng lặp xử lý dữ liệu đơn giản và tuyến tính (linear), trình compiler (`rustc`) có năng lực mạnh mẽ hơn để kích hoạt auto-vectorization (SIMD) trên cả những dòng CPU hiện đại của terminal devices.
+
+## 8. Development Environment Troubleshooting (Hướng Dẫn Sửa Lỗi Môi Trường Compiler)
+
+### Windows Linker Issues (Không tìm thấy `link.exe`)
+
+Nếu bạn bắt gặp báo lỗi `error: linker 'link.exe' not found` trên hệ điều hành Windows, có nghĩa là bộ Visual Studio C++ Build Tools đang bị mất. Bạn có thể hoặc chọn cách tải chúng về, hoặc chuyển đổi Rust sang toolchain cấu hình của GNU:
+
+**Giải pháp (Chuyển đổi sang GNU Toolchain):**
 
 ```bash
 rustup toolchain install stable-x86_64-pc-windows-gnu
