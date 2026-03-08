@@ -1,4 +1,4 @@
-name: Rust
+name: Rust LLM CI
 
 on:
   push:
@@ -10,13 +10,35 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  build_and_test:
+    name: Build & Test Engine
     runs-on: ubuntu-latest
+    
+    # Chỉ định thư mục chứa mã nguồn Rust gốc
+    defaults:
+      run:
+        working-directory: ./agent-lightning-rs
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Update Rust Toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+
+    - name: Cache Cargo Dependencies
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: "./agent-lightning-rs"
+
+    - name: Check Formatting
+      run: cargo fmt -- --check
+      continue-on-error: true
+
+    - name: Build Core (Release Mode)
+      run: cargo build --release --verbose
+
+    - name: Run Algorithm Unit Tests
       run: cargo test --verbose
