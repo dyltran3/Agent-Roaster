@@ -1,3 +1,4 @@
+pub mod attention;
 pub mod backprop;
 pub mod layer;
 pub mod network;
