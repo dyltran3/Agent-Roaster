@@ -1,6 +1,6 @@
 # ☕ Agent Roaster: Nền Tảng AI Học Tăng Cường & Mô Hình Ngôn Ngữ Xử Lý Hồ Sơ Rang Cà Phê
 
-![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+![License](https://img.shields.io/badge/License-Non--Commercial-red.svg)
 ![Language](https://img.shields.io/badge/Language-Rust-orange.svg)
 ![Architecture](https://img.shields.io/badge/Architecture-Transformer%20%7C%20PPO%20%7C%20GRPO-success.svg)
 ![Dependency](https://img.shields.io/badge/Dependencies-Zero-brightgreen.svg)
@@ -77,5 +77,5 @@ Mời bạn tham khảo cẩm nang **Từ Điển AI Đại Cương** được b
 
 ## 📜 Giấy Phép (License)
 
-Mã nguồn này được phân phối dưới sự ủy quyền của giấy phép **Apache License 2.0**.
-Bạn được phép tự do tùy biến, thương mại hóa và phát triển các hệ thống rang thông minh cá nhân hóa dựa trên nhân Kernel này, miễn là tuân thủ việc giữ lại bản quyền khai sinh ban đầu. Xem chi tiết tại [LICENSE](LICENSE).
+Mã nguồn này được phân phối dưới sự ủy quyền của giấy phép **Non-Commercial License**.
+Bạn được phép tự do tùy biến, nghiên cứu và phát triển các hệ thống rang thông minh **cho mục đích học tập cá nhân và phi thương mại**. Mọi hành vi thương mại hóa mã nguồn, đóng gói bán phần mềm hay cung cấp dịch vụ thu tiền dựa trên lõi kiến trúc này đều **bị nghiêm cấm tuyệt đối** nếu không có sự cho phép bằng văn bản từ tác giả. Xem chi tiết tại [LICENSE](LICENSE).
