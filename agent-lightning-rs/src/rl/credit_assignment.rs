@@ -115,3 +115,49 @@ pub fn normalize_advantages(transitions: &mut [Transition]) {
         }
     }
 }
+
+/// Physics-Informed Reward Shaping for Coffee Roasting Env (Edge AI)
+/// Encodes Maillard phase curve (F-13), Color development (F-15),
+/// and precision First Crack Timing Model (F-38, F-40).
+pub fn calculate_physics_reward(
+    bt: f64,
+    ror: f64,
+    target_ror: f64,
+    is_first_crack: bool,
+    crack_timing: f64,
+    expected_crack_timing: f64,
+) -> f64 {
+    let mut reward = 0.0;
+
+    // 1. ROR tracking precision reward
+    let ror_error = (ror - target_ror).abs();
+    reward += if ror_error < 1.0 {
+        1.0
+    } else {
+        -ror_error * 0.5
+    };
+
+    // 2. Maillard Reaction & Color Dev (F-13, F-15)
+    // Between 150C and 200C is the Maillard zone where chemical complexity builds.
+    if bt > 150.0 && bt < 200.0 {
+        // Ideal Maillard ROR should be smoothly decaying, typically 5-15 C/min
+        if ror > 5.0 && ror < 15.0 {
+            reward += 2.0; // Positive reinforcement for correct Maillard pacing
+        } else {
+            reward -= 2.0; // Penalty for baking (too slow) or scorching (too fast)
+        }
+    }
+
+    // 3. First Crack Timing Penalty/Reward (F-38, F-40)
+    // Hitting the expected crack window is the ultimate test of roasting mastery.
+    if is_first_crack {
+        let timing_error = (crack_timing - expected_crack_timing).abs();
+        if timing_error < 30.0 {
+            reward += 10.0; // Huge reward for hitting precise crack window
+        } else {
+            reward -= timing_error * 0.2; // Penalty for prematurely or late crack
+        }
+    }
+
+    reward
+}

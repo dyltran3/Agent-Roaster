@@ -15,6 +15,44 @@ pub fn mse_loss(pred: &Tensor, target: &Tensor) -> (f64, Tensor) {
     (loss, grad)
 }
 
+// ─── Physics-Informed Neural Network (PINN) Loss ──────────────────────────────
+
+/// **Physics-Informed Neural Network (PINN) Loss**
+/// Encodes the thermodynamic conservation of energy (Coffee Master F-36 abstraction).
+/// L_total = MSE_Loss(Pred, Target) + lambda * Physics_Penalty
+/// Physics_Penalty penalizes outputs that violate ROR vs Energy bounds.
+pub fn physics_informed_loss(
+    pred: &Tensor,
+    target: &Tensor,
+    et: f64,
+    bt: f64,
+    predicted_ror: f64,
+    lambda: f64, // Physics penalty weight
+) -> (f64, Tensor) {
+    // 1. Base MSE Loss
+    let (mut loss, mut grad) = mse_loss(pred, target);
+
+    // 2. Physics Constraints (F-36 abstraction)
+    // Energy conservation: ROR cannot exceed theoretical max transfer given ET and BT.
+    // Max_ROR = k * (ET - BT)
+    let k_heat = 0.5; // system-specific heat transfer mapping
+    let max_theoretical_ror = k_heat * (et - bt).max(0.0);
+
+    if predicted_ror > max_theoretical_ror {
+        let violation = predicted_ror - max_theoretical_ror;
+        let penalty = violation.powi(2); // Quadratic penalty for physics violation
+        loss += lambda * penalty;
+
+        // Add physics gradient penalty back to the network's prediction
+        // to automatically correct future outputs away from violation bounds
+        for g in grad.data.iter_mut() {
+            *g += lambda * 2.0 * violation / pred.data.len() as f64;
+        }
+    }
+
+    (loss, grad)
+}
+
 // ─── Huber Loss (Smooth L1) ───────────────────────────────────────────────────
 
 /// Huber Loss: robust to outliers, transitions between L1 and L2

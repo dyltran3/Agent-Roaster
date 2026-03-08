@@ -5,6 +5,7 @@ pub mod envs;
 pub mod lightning;
 pub mod nn;
 pub mod rl;
+pub mod security;
 pub mod training;
 pub mod ui;
 

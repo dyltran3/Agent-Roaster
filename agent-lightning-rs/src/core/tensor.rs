@@ -312,11 +312,13 @@ impl Tensor {
                 let other_row_offset = j * k;
                 let other_col = &other_t.data[other_row_offset..other_row_offset + k];
 
-                let mut sum = 0.0;
-                // Compiler may auto-vectorize this loop
-                for l in 0..k {
-                    sum += self_row[l] * other_col[l];
-                }
+                // Auto-vectorization / SIMD iterators
+                let sum: f64 = self_row
+                    .iter()
+                    .zip(other_col.iter())
+                    .map(|(a, b)| a * b)
+                    .sum();
+
                 result[i * n + j] = sum;
             }
         }
@@ -333,6 +335,21 @@ impl Tensor {
             }
         }
         Tensor::new(result, vec![cols, rows])
+    }
+
+    /// Concatenate two 2D tensors along axis 0
+    pub fn concat_axis0(&self, other: &Tensor) -> Tensor {
+        assert_eq!(self.shape.len(), 2);
+        assert_eq!(other.shape.len(), 2);
+        assert_eq!(self.shape[1], other.shape[1], "Dim 1 must match for concat");
+
+        let mut new_data = self.data.clone();
+        new_data.extend_from_slice(&other.data);
+
+        Tensor::new(
+            new_data,
+            vec![self.shape[0] + other.shape[0], self.shape[1]],
+        )
     }
 
     /// Reshape tensor (total elements must match)
@@ -441,6 +458,78 @@ fn lcg_rand(seed: u64) -> u64 {
     z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
     z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
     z ^ (z >> 31)
+}
+
+// --- Edge AI Optimizations (Memory & Physics) ---
+
+/// Arena Memory Pool to avoid Heap fragmentation on Edge devices
+pub struct TensorArena {
+    pub buffer: Vec<f64>,
+    pub offset: usize,
+}
+
+impl TensorArena {
+    pub fn new(capacity: usize) -> Self {
+        TensorArena {
+            buffer: vec![0.0; capacity],
+            offset: 0,
+        }
+    }
+
+    pub fn allocate(&mut self, size: usize) -> &[f64] {
+        if self.offset + size > self.buffer.len() {
+            panic!("Arena Out of Memory");
+        }
+        let start = self.offset;
+        self.offset += size;
+        &self.buffer[start..self.offset]
+    }
+
+    pub fn reset(&mut self) {
+        self.offset = 0;
+    }
+}
+
+/// KV Cache for Transformer models (Edge AI Memory Optimization)
+#[derive(Clone, Debug)]
+pub struct KVCache {
+    pub k_cache: Option<Tensor>,
+    pub v_cache: Option<Tensor>,
+}
+
+impl KVCache {
+    pub fn new() -> Self {
+        KVCache {
+            k_cache: None,
+            v_cache: None,
+        }
+    }
+
+    pub fn update(&mut self, new_k: &Tensor, new_v: &Tensor) -> (Tensor, Tensor) {
+        let k = match &self.k_cache {
+            Some(curr_k) => curr_k.concat_axis0(new_k),
+            None => new_k.clone(),
+        };
+        let v = match &self.v_cache {
+            Some(curr_v) => curr_v.concat_axis0(new_v),
+            None => new_v.clone(),
+        };
+        self.k_cache = Some(k.clone());
+        self.v_cache = Some(v.clone());
+        (k, v)
+    }
+}
+
+/// Simple int8 Quantization for storage
+pub fn quantize_f64_to_i8(data: &[f64]) -> (Vec<i8>, f64) {
+    let max_val = data.iter().fold(0.0f64, |acc, &x| acc.max(x.abs()));
+    let scale = if max_val > 0.0 { 127.0 / max_val } else { 1.0 };
+    let quantized = data.iter().map(|&x| (x * scale).round() as i8).collect();
+    (quantized, scale)
+}
+
+pub fn dequantize_i8_to_f64(data: &[i8], scale: f64) -> Vec<f64> {
+    data.iter().map(|&x| (x as f64) / scale).collect()
 }
 
 #[cfg(test)]
