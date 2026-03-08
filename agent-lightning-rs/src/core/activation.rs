@@ -31,6 +31,38 @@ pub fn sigmoid(t: &Tensor) -> Tensor {
     )
 }
 
+pub struct GELU;
+impl GELU {
+    /// Gaussian Error Linear Unit (GELU) approximation
+    pub fn forward(inputs: &Tensor) -> Tensor {
+        let mut out = Tensor::zeros(inputs.shape.clone());
+        for i in 0..inputs.data.len() {
+            let x = inputs.data[i];
+            out.data[i] =
+                0.5 * x * (1.0 + (x * 1.5957691216057308 * (1.0 + 0.044715 * x * x)).tanh());
+        }
+        out
+    }
+
+    pub fn backward(inputs: &Tensor, grad_output: &Tensor) -> Tensor {
+        let mut grad_input = Tensor::zeros(inputs.shape.clone());
+        for i in 0..inputs.data.len() {
+            let x = inputs.data[i];
+            let x_sq = x * x;
+            let x_cube = x_sq * x;
+            let inner = 1.5957691216057308 * (x + 0.044715 * x_cube);
+            let tanh_inner = inner.tanh();
+
+            let sech_sq = 1.0 - tanh_inner * tanh_inner;
+            let inner_deriv = 1.5957691216057308 * (1.0 + 3.0 * 0.044715 * x_sq);
+
+            let gelu_deriv = 0.5 * (1.0 + tanh_inner) + 0.5 * x * sech_sq * inner_deriv;
+            grad_input.data[i] = grad_output.data[i] * gelu_deriv;
+        }
+        grad_input
+    }
+}
+
 /// Hyperbolic tangent: f(x) = tanh(x)
 pub fn tanh_fn(t: &Tensor) -> Tensor {
     Tensor::new(t.data.iter().map(|&x| x.tanh()).collect(), t.shape.clone())
