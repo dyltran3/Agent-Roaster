@@ -1,122 +1,81 @@
-<div align="center">
-  
-# ⚡ Agent Lightning RS 🦀
-**Khung học tăng cường (RL) phân tán, tốc độ cao, zero-dependency dành cho thiết bị biên (Edge Devices).**
+# ☕ Agent Roaster: Nền Tảng AI Học Tăng Cường & Mô Hình Ngôn Ngữ Xử Lý Hồ Sơ Rang Cà Phê
 
-[![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange.svg?style=for-the-badge)]()
+![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+![Language](https://img.shields.io/badge/Language-Rust-orange.svg)
+![Architecture](https://img.shields.io/badge/Architecture-Transformer%20%7C%20PPO%20%7C%20GRPO-success.svg)
+![Dependency](https://img.shields.io/badge/Dependencies-Zero-brightgreen.svg)
 
-_Lấy cảm hứng từ cấu trúc Agent Lightning của Microsoft, được xây dựng hoàn toàn từ con số 0 phục vụ cho Edge Computing và Terminal AI._
-
-</div>
+**Agent Roaster** là một nền tảng Học Tăng Cường (Reinforcement Learning) và Mô Hình Ngôn Ngữ Lớn (LLM) đột phá được xây dựng hoàn toàn từ con số không (Zero-Dependency) bằng ngôn ngữ **Rust**. Dự án tập trung vào việc mô phỏng, phân tích và tối ưu hóa các hồ sơ rang cà phê chuyên nghiệp thông qua các thuật toán AI tự trị tiên tiến.
 
 ---
 
-## 🎯 Giới thiệu
+## 🌟 Chức năng Cốt lõi
 
-**Agent Lightning RS** là một framework AI/RL mã nguồn mở được viết hoàn toàn bằng **Rust thuần (pure Rust)**, không sử dụng bất kỳ thư viện bên ngoài nào (zero-dependency). Framework được thiết kế chuyên biệt để tối ưu quá trình vận hành mô hình học máy theo hướng **Disaggregated (phân tán)** giữa thiết bị biên (Client/Terminal) và máy chủ huấn luyện (Server).
+Hệ thống kết hợp sức mạnh của lý thuyết Điều khiển tối ưu (MDP) và Trí tuệ ngôn ngữ (Transformer) để tạo ra Agent AI có khả năng tự suy luận và bắt chước chuyên gia.
 
-Với Agent Lightning RS, các thiết bị điện toán yếu vẫn có thể ra quyết định thông minh theo thời gian thực (Real-time AI) nhờ việc tách biệt khâu **Inference (Suy luận)** và **Training (Huấn luyện)** theo kịch bản đồng bộ tốc độ cao.
+### 1. Kiến trúc Trí Tuệ (Neural Network & LLM Engine)
 
----
+Toàn bộ mạng nơ-ron được tự phát triển độc lập không phụ thuộc vào `PyTorch` hay `TensorFlow`.
 
-## 🚀 Các tính năng cốt lõi
+- **Tensor Core (`src/core/tensor.rs`)**: Lõi tính toán đại số tuyến tính đa chiều (Ma trận, đạo hàm).
+- **Transformer Block (`src/nn/transformer.rs`)**: Bộ vi xử lý ngôn ngữ/chuỗi hiện đại ghép nối từ mạng lưới tự chú ý **Multi-Head Self-Attention** (`attention.rs`), **LayerNorm** (`normalization.rs`) và **GELU**.
+- **Backpropagation (`src/nn/backprop.rs`)**: Cơ sở tự động tính toán đạo hàm (Auto-Grad) và lan truyền ngược, kết hợp hoàn hảo với **Adam Optimizer** siêu tốc (`optimizer.rs`).
 
-- 📦 **Zero-dependency (Không phụ thuộc):** Toàn bộ thư viện Tensor, Autograd (đạo hàm tự động), Thuật toán tối ưu (Adam, SGD) và Mạng nơ-ron được tự xây dựng từ đầu 100%. Không cần `tch-rs`, `ndarray` hay `candle`.
-- ⚡ **Disaggregated RL Architecture:** Kiến trúc tách biệt Client (thực thi suy luận cực nhẹ) và Server (tập trung sức mạnh tính toán Gradient). Giao tiếp cực nhanh thông qua giao thức mpsc.
-- 🧠 **Cơ chế Token-level PPO & GRPO:** Tối ưu hóa điểm thưởng (reward) qua Reward Shaping (AIR) ngay tại runtime. Đặc biệt thiết kế cho các Agent hoạt động theo chuỗi thao tác lý luận (Reasoning Sequence).
-- 🧩 **LightningRL (HRL):** Vận hành cấu trúc Học tăng cường Phân cấp (Hierarchical RL) - Agent Quản lý (Manager) tạo mục tiêu trung hạn cho Agent Thực thi (Worker).
-- 🎮 **Môi trường Giả lập Tích hợp:** Đi kèm 2 môi trường học tập mẫu: _GridWorld_ (Không gian lưới) và _CartPole_ (Cân bằng gậy xoay).
-- 🔌 **Model Context Protocol (MCP):** Sẵn sàng chạy ở chế độ MCP Server, kết nối thẳng vào hệ sinh thái AI Tooling hiện tại.
+### 2. Hệ thống Học Tăng Cường (Reinforcement Learning)
 
----
+- **PPO - Proximal Policy Optimization (`src/rl/ppo.rs`)**: Thuật toán OpenAI chuẩn mực có sử dụng _Clipping_ để khống chế tốc độ biến thiên học tập, bảo vệ tác nhân AI khỏi các quyết định "ngớ ngẩn" trong quá trình rang.
+- **GRPO - Group Relative Policy Optimization (`src/rl/grpo.rs`)**: Bí quyết thu gọn bộ nhớ mạng Critic mới nhất (DeepSeek type), chấm điểm nội bộ giữa các dự đoán để tìm ra đường cong gia nhiệt (RoR) lý tưởng.
 
-## 📂 Kiến trúc Dự Án
+### 3. Hệ thống Giám sát & Bằng chứng Thuật Toán
 
-```text
-agent-lightning-rs/
-├── docs/                      # Tài liệu phân tích Module
-├── data/                      # Dataset offline (.csv, JSON)
-├── src/
-│   ├── core/                  # [TENSORS] Toán học, Autograd, Activations, Losses, Optimizers
-│   ├── nn/                    # [NEURAL NET] Layers, Networks, Backprop
-│   ├── rl/                    # [RL ALGO] Buffers, PPO, GRPO, Hierarchical, Credit Assignment
-│   ├── lightning/             # [DISAGGREGATED] Client, Server, Reward Shaper, Protocol
-│   ├── envs/                  # [ENVIRONMENTS] GridWorld, CartPole
-│   ├── training/              # [TRAINING] Vòng lặp Loop, Logger, Loader, Checkpointing
-│   ├── ui/                    # [ASCII UI] Terminal Dashboard hiển thị Real-time
-│   ├── mcp_server.rs          # [MCP] Kết nối giao thức công cụ LLM
-│   └── main.rs                # [APP] Entry point để chạy các Demo
-├── Cargo.toml                 # [CONFIG] Định nghĩa Project (GNU Toolchain)
-└── .gitignore                 # Các tệp bị theo dõi bởi Git
-```
+- Tích hợp ghi nhận trạm dữ liệu theo thời gian thực (Logging Console) màu sắc rõ ràng (GridWorld, Logging).
+- Cung cấp tính năng Lưu trữ và Nạp **Magic Header (AGNT)** cho các trọng số weights an toàn (chống Injection Tensor).
+- Khả năng **Offline RL / Behavioral Cloning** đỉnh cao. Dự đoán độ lệch Profile chỉ bằng `0.03 °C` so với Master Roaster.
 
 ---
 
-## 🛠 Hướng dẫn Cài đặt & Chạy lệnh
+## 🚀 Hướng dẫn Cài đặt & Khởi động
 
-Do kiến trúc tối ưu hóa cực đoan, code hoàn toàn tự đứng độc lập. Máy tính của bạn chỉ cần **Rust** bản stable mới nhất.
-
-### 1. Chuẩn bị Môi trường (Windowns)
-
-Nếu bạn đang sử dụng Windows và không muốn cài Visual Studio C++ Build Tools nặng nề, hãy sử dụng **GNU Toolchain**:
+Do dự án đạt chuẩn **Zero-Dependency** nên quá trình biên dịch cực kỳ tinh gọn. Chỉ yêu cầu có cài đặt **Rust / Cargo** (>= 1.70).
 
 ```bash
-rustup toolchain install stable-x86_64-pc-windows-gnu
-rustup default stable-x86_64-pc-windows-gnu
-```
+# Clone dự án về máy
+git clone https://github.com/TuanAnh/Agent-Roaster.git
+cd Agent-Roaster/agent-lightning-rs
 
-### 2. Biên dịch & Chạy Huấn Luyện (Demo RL)
+# Build thư viện tối ưu hóa
+cargo build --release
 
-Lệnh này sẽ khởi động Dashboard ASCII ngay trong Terminal, tự động chạy qua 3 bài test: **PPO (GridWorld)**, **GRPO (CartPole)**, và **LightningRL (GridWorld)**.
-
-```bash
+# Chạy hệ thống Đánh giá Toàn cảnh và mô phỏng
 cargo run --release
 ```
 
-### 3. Khởi chạy MCP Server (Cho AI Agents)
+---
 
-Nếu bạn muốn dùng LLM tương tác với thư viện RL này qua giao thức kết nối công cụ chuẩn hóa của Anthropic:
+## 📁 Cấu trúc Dự án
 
 ```bash
-cargo run --bin mcp-server
+agent-lightning-rs/
+├── docs/                   # Bách Khoa Toàn Thư Algorithm phân tích Toán Học/AI
+├── src/
+│   ├── core/               # Lõi tính toán Tensor, Loss (MSE/CrossEntropy), Optimizer, Activation (GELU)
+│   ├── envs/               # Môi trường mô phỏng (GridWorld, CartPole, Coffee Roasting)
+│   ├── lightning/          # Giao thức mạng cho Client/Server, POMDP
+│   ├── nn/                 # Kiến trúc Transformer, Attention, Norm, Backprop
+│   ├── rl/                 # Thuật toán RL: PPO, GRPO, Multi-Agent (MAPPO)
+│   └── training/           # Cơ chế Load/Save Checkpoint và Logging
+└── data/                   # Tập dữ liệu mẫu (Standard Roast Profile)
 ```
 
 ---
 
-## 📊 Terminal Dashboard Training Theo Thời Gian Thực
+## 📚 Tài Liệu Bổ Sung & Thuật Toán
 
-Khác với các Framework phức tạp yêu cầu thư viện Web/Python (Tensorboard), Agent Lightning RS tích hợp sẵn cơ chế Logger và Chart (Biểu đồ) ngay lập tức trên Terminal bằng ANSI Escape code cực ngầu:
-
-```text
-═══════════════════════════════════════════════════════════════
-  AGENT LIGHTNING [Training Dashboard]
-═══════════════════════════════════════════════════════════════
-  Status: Training on GridWorld   | Version: v15
-  Episodes: 125                   | Throughput: 153.2 ep/s
-  ─────────────────────────────────────────────────────────────
-  Current Reward:      50.20 | Mean (last 20):      42.10
-  Policy Loss:       0.0416
-  ─────────────────────────────────────────────────────────────
-  Reward Trend (last 20):
-                        ███     ██      ███
-                    ████████  ██████  ███████
-                  ████████████████████████████████
-═══════════════════════════════════════════════════════════════
-```
+Mời bạn tham khảo cẩm nang **Từ Điển AI Đại Cương** được biên soạn bằng Tiếng Việt đính kèm bên trong dự án: `docs/algorithm_analysis.md`. Đây là cánh cửa mở ra toàn bộ thế giới toán học đằng sau Agent-Roaster.
 
 ---
 
-## 🤝 Roadmap Phát triển (Sắp ra mắt)
+## 📜 Giấy Phép (License)
 
-- `[ ]` Khôi phục Checkpointing weights dưới định dạng JSON bên cạnh dạnh nhị phân (Binary) gốc.
-- `[ ]` Hoàn thiện **Coffee Dataset Parser** nâng cao để phục vụ dự án Agent-Roaster (Tối ưu điểm rang cà phê bằng AI).
-- `[ ]` Thêm môi trường OpenAI Gym thông qua Rust port (nếu cần thiết cho Benchmark).
-- `[ ]` Token-level KV Cache cho Autograd hỗ trợ sequence dài hạn cực hạn.
-
----
-
-## 📜 Giấy Phép
-
-Dự án được phân phối dưới giấy phép **MIT License**. Bạn có thể thoải mái chia sẻ, chỉnh sửa và sử dụng trong nghiên cứu khoa học cũng như ứng dụng thực tế. Xem tệp `LICENSE` để biết thêm chi tiết.
+Mã nguồn này được phân phối dưới sự ủy quyền của giấy phép **Apache License 2.0**.
+Bạn được phép tự do tùy biến, thương mại hóa và phát triển các hệ thống rang thông minh cá nhân hóa dựa trên nhân Kernel này, miễn là tuân thủ việc giữ lại bản quyền khai sinh ban đầu. Xem chi tiết tại [LICENSE](LICENSE).
