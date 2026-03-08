@@ -105,3 +105,56 @@ impl ExtendedKalmanFilter {
         self.p[0][0] = (1.0 - k_gain) * self.p[0][0];
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ekf_roast_simulation() {
+        println!("--- Edge AI: Kalman Filter Roasting Simulation (Physics-Informed) ---");
+        // Start roasting at room temp
+        let mut ekf = ExtendedKalmanFilter::new(25.0);
+        let dt = 1.0; // 1 second step
+
+        // Simulating 10 seconds of rapid heating
+        let environment_temp = 200.0;
+
+        println!("Time(s) | ET (°C) | Sensor BT | EKF T_bean | EKF ROR | Moisture(%) | CDI(Color)");
+        println!(
+            "--------------------------------------------------------------------------------"
+        );
+
+        let mut sim_bt = 25.0; // Real physical bean temp
+        for t in 1..=10 {
+            // Physics simulation with artificial noise
+            let heat_transfer = 0.02 * (environment_temp - sim_bt);
+            sim_bt += heat_transfer;
+
+            // Introduce sensor noise (+/- 0.5 degrees)
+            let noise = ((t * 997) % 10) as f64 * 0.1 - 0.5;
+            let noisy_sensor_bt = sim_bt + noise;
+
+            // AI State Estimation (Physics Model)
+            ekf.predict(dt, environment_temp);
+            ekf.update(noisy_sensor_bt);
+
+            println!(
+                "{:^7} | {:^7.1} | {:^9.2} | {:^10.2} | {:^7.2} | {:^11.2} | {:^10.4}",
+                t, environment_temp, noisy_sensor_bt, ekf.x[0], ekf.x[1], ekf.x[2], ekf.x[3]
+            );
+        }
+
+        // Ensure ROR is positive (heating up)
+        assert!(ekf.x[1] > 0.0);
+        // Ensure moisture is dropping
+        assert!(ekf.x[2] <= 11.0);
+
+        println!(
+            "--------------------------------------------------------------------------------"
+        );
+        println!(
+            "EKF smoothly tracked noisy BT sensor and successfully estimated ROR and Moisture!"
+        );
+    }
+}
