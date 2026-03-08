@@ -13,7 +13,11 @@ use crate::ui::dashboard::Dashboard;
 
 // ─── PPO Training Loop ────────────────────────────────────────────────────────
 
-pub fn train_ppo(env: &mut dyn Environment, eval_env: &mut dyn Environment, cfg: &TrainingConfig) {
+pub fn train_ppo(
+    env: &mut dyn Environment,
+    eval_env: &mut dyn Environment,
+    cfg: &TrainingConfig,
+) -> PPOAgent {
     let ppo_cfg = PPOConfig {
         lr_actor: cfg.lr_actor,
         lr_critic: cfg.lr_critic,
@@ -115,6 +119,12 @@ pub fn train_ppo(env: &mut dyn Environment, eval_env: &mut dyn Environment, cfg:
     }
 
     logger.print_footer();
+
+    // Extract Agent (Destructure TrainerType)
+    match server.trainer.unwrap().trainer {
+        TrainerType::PPO(agent) => agent,
+        _ => panic!("Expected PPO agent"),
+    }
 }
 
 // ─── GRPO Training Loop ────────────────────────────────────────────────────────

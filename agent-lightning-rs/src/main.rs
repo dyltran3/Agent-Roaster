@@ -1,4 +1,5 @@
 use agent_lightning::envs::cartpole::CartPole;
+use agent_lightning::envs::coffee_roaster::CoffeeRoasterEnv;
 use agent_lightning::envs::gridworld::GridWorld;
 use agent_lightning::training::coffee_dataset::CoffeeDataset;
 /// Agent Lightning RS — Entry Point & Demo
@@ -19,24 +20,33 @@ fn main() {
     println!("║      Core: Tensor Engine + NN + PPO/GRPO/HRL from scratch    ║");
     println!("╚═══════════════════════════════════════════════════════════════╝");
 
-    // ── Demo 1: PPO on GridWorld ──────────────────────────────────────────────
-    println!("\n\n━━━  Demo 1: PPO Agent on GridWorld  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    // ── Demo 1: PINN Agent (PPO) on CoffeeRoasterEnv ─────────────────────────
+    println!("\n\n━━━  Demo 1: Physics-Informed Agent on Coffee Roaster  ━━━━━━━━━━━━\n");
     {
         let cfg = TrainingConfig {
             algorithm: "ppo".to_string(),
-            environment: "gridworld".to_string(),
-            total_episodes: 300,
+            environment: "coffee_roaster".to_string(),
+            total_episodes: 250,
             log_every: 25,
-            eval_every: 100,
-            eval_episodes: 5,
-            n_steps: 128,
-            batch_size: 32,
+            eval_every: 50,
+            eval_episodes: 2,
+            n_steps: 60,
+            batch_size: 16,
             update_epochs: 4,
             ..TrainingConfig::default()
         };
-        let mut env = GridWorld::new(5, 5);
-        let mut eval_env = GridWorld::new(5, 5);
-        train_ppo(&mut env, &mut eval_env, &cfg);
+        // Run purely inside Physics-Simulation Box
+        let mut env = CoffeeRoasterEnv::new();
+        let mut eval_env = CoffeeRoasterEnv::new();
+        // Return a trained agent for saving
+        let trained_agent = train_ppo(&mut env, &mut eval_env, &cfg);
+
+        // Model Persistence
+        let path = "roaster_pinn_model.bin";
+        match trained_agent.actor.save(path) {
+            Ok(_) => println!("  [SUCCESS] Checkpoint saved strictly to {}.", path),
+            Err(e) => println!("  [ERROR] Failed to save Checkpoint: {}", e),
+        }
     }
 
     // ── Demo 2: GRPO on CartPole ──────────────────────────────────────────────
