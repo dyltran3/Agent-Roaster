@@ -93,7 +93,6 @@ fn main() {
                 println!("\n  [EVALUATION] Starting Offline RL (Behavioral Cloning) with strict constraints...");
 
                 use agent_lightning::core::activation::Activation;
-                use agent_lightning::core::loss::mse_loss;
                 use agent_lightning::core::optimizer::{Adam, Optimizer};
                 use agent_lightning::nn::network::Sequential;
 
@@ -113,8 +112,21 @@ fn main() {
                         // Forward with cache for backprop
                         let (pred, caches) = policy.forward_with_cache(&transition.input);
 
-                        // Compute Loss
-                        let (loss, grad) = mse_loss(&pred, &transition.output); // holds target_temp
+                        // Extract physical context (assuming mock parsing from dataset)
+                        let et = transition.input.data.get(0).copied().unwrap_or(200.0);
+                        let bt = transition.input.data.get(1).copied().unwrap_or(150.0);
+                        let target_pred = pred.data[0];
+                        let target_ror = target_pred - bt; // abstract projection
+
+                        // Compute Loss (Physics-Informed Edge AI)
+                        let (loss, grad) = agent_lightning::core::loss::physics_informed_loss(
+                            &pred,
+                            &transition.output,
+                            et,
+                            bt,
+                            target_ror,
+                            0.05,
+                        );
                         total_loss += loss;
 
                         // Backprop via Framework Standard
@@ -160,6 +172,66 @@ fn main() {
             }
         }
         Err(e) => println!("  [ERROR] Failed to load coffee profiles: {}", e),
+    }
+
+    // ── Demo 4: End-To-End PINN Inference Workflow (Gray-box AI) ────────────────
+    println!("\n\n━━━  Demo 4: End-To-End PINN Inference Workflow (Gray-box AI)  ━━━━\n");
+    {
+        use agent_lightning::core::activation::Activation;
+        use agent_lightning::core::tensor::Tensor;
+        use agent_lightning::envs::state_estimator::ExtendedKalmanFilter;
+        use agent_lightning::nn::network::Sequential;
+        use agent_lightning::security::bounds::{
+            apply_hybrid_control, check_safety_bounds, compute_base_gas,
+        };
+
+        // 1. Init Physics Math filter and AI Core
+        let mut ekf = ExtendedKalmanFilter::new(25.0);
+        let policy = Sequential::new()
+            .dense(4, 16, Activation::ReLU)
+            .dense(16, 16, Activation::ReLU)
+            .dense(16, 1, Activation::Tanh); // Output: residual correction in [-1, 1]
+
+        let dt = 1.0;
+        let et = 210.0;
+        let sensor_bt = 85.0; // Assume Noisy Sensor Data
+
+        println!(
+            "  [Step 1] Sensor Readings: ET={:.1}°C, Mũi dò BT={:.1}°C",
+            et, sensor_bt
+        );
+
+        // 2. State Estimator Filter
+        ekf.predict(dt, et);
+        ekf.update(sensor_bt);
+        let abstract_state = vec![ekf.x[0], ekf.x[1], ekf.x[2], ekf.x[3]];
+        println!(
+            "  [Step 2] EKF Abstract Vector: T_bean={:.2}, ROR={:.2}, Moisture={:.2}, CDI={:.4}",
+            ekf.x[0], ekf.x[1], ekf.x[2], ekf.x[3]
+        );
+
+        // 3. Foundation Model Inference
+        let state_t = Tensor::new(abstract_state, vec![1, 4]);
+        let residual_correction = policy.forward(&state_t).data[0];
+        println!(
+            "  [Step 3] LLM AI Residual Output: {:.2}%",
+            residual_correction * 5.0
+        );
+
+        // 4. Hybrid Control Loop
+        let target_ror = 15.0; // Expert planned ROR
+        let base_gas = compute_base_gas(et, ekf.x[0], target_ror);
+        let output_gas = apply_hybrid_control(base_gas, residual_correction);
+        println!("  [Step 4] Thermodynamic Base Gas: {:.2}%", base_gas);
+        println!("  [Step 5] Final Hybrid Output Gas: {:.2}%", output_gas);
+
+        // 5. Safety Bounds Checker
+        let is_safe = check_safety_bounds(et, ekf.x[0], ekf.x[1]);
+        if is_safe {
+            println!("  [Safety Guard] Status: SAFE ✅ (System operating correctly)");
+        } else {
+            println!("  [Safety Guard] Status: CRITICAL EMERGENCY STOP ❌ (System limit reached)");
+        }
     }
 
     println!("\n✓ All demos completed.\n");

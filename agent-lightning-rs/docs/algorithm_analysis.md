@@ -53,6 +53,28 @@ Tài liệu này là cẩm nang chuyên sâu giải phẫu mọi thuật toán T
 
 ---
 
+## Phần 3: Physics-Informed Edge AI (PINN)
+
+Sự kết hợp hoàn hảo giữa Mô hình Toán Vật Lý (Thermodynamics) và Máy Học (LLM) để đảm bảo mô hình chạy Real-time cực kì an toàn trên phần cứng nhúng (Edge).
+
+### 7. Extended Kalman Filter (EKF)
+
+- **Là gì**: Trợ lý toán học (State Estimator) có vai trò lọc bỏ rác/nhiễu (Noise) của cảm biến, tính toán ra thực tế bên trong lồng rang.
+- **Cách hoạt động (Theo F-21 -> F-25)**: Dù chỉ nhận 2 cảm biến (ET, BT), nhưng nhờ phương trình định luật làm lạnh Newton, tốc độ truyền nhiệt và bay hơi, EKF giả lập được một thế giới song song trong AI (Vector trạng thái gồm 4 biến: Nhiệt hạt, Độ gia tốc ROR, Độ Ẩm, Màu Sắc CDI).
+
+### 8. Hybrid Control & Safety Bounds (Kiểm Soát Lai)
+
+- **Vấn đề**: Giao quyền hoàn toàn cho AI điều khiển ngọn lửa là tự tử. AI thỉnh thoảng sẽ bị "ngáo" (Ảo giác - Hallucination) sinh ra ngọn lửa 100% khi không cần thiết, đốt cháy phần cứng.
+- **Cách hoạt động (F-19, F-30)**: Hệ thống sử dụng _Điều khiển Lai_. Cỗ máy tính toán Vật Lý sẽ tự suy luận ra một mức Gas Tiêu Chuẩn (Base Gas) tuyệt đối an toàn để giữ Môi trường. Mạng AI Nơ-ron (Transformer) chỉ có quyền cung cấp tham số _Bù/Trừ (Residual Correction)_ tối đa $\pm 5\%$ để tinh chỉnh hương vị.
+- **Công cụ An Toàn (`bounds.rs`)**: Các rơ-le số tự động ngắt điện nếu ROR phi mã > 30 hoặc Nhiệt chạm trần 250 độ.
+
+### 9. PINN Loss (Toán Vật Lý Ép Buộc Hàm Loss)
+
+- **Tại sao cần**: Mạng NN cũ nếu đoán sai sẽ chỉ bị phạt nhẹ. Neural Network giờ phải tuân theo Định luật Bảo Toàn Năng Lượng (F-36).
+- **Cách hoạt động**: Lồng thêm thuật toán Penalty vào quá trình đạo hàm quay lui (Backpropagation). Nếu AI sinh ra Trọng số Weight dự đoán tốc độ tăng nhiệt (ROR) vượt quá giới hạn lý thuyết vật lý cho phép của máy, Loss sẽ bị dội thêm hình phạt, đánh dấu bước sai trái, bắt nó học lại.
+
+---
+
 ## Hướng dẫn Bắt Đầu Nâng Cao
 
 Để làm chủ toàn bộ hệ thống Agent-Roaster, hãy làm theo lịch trình:
