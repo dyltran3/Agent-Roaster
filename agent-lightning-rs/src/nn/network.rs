@@ -120,6 +120,50 @@ impl Sequential {
         println!("  Total Parameters: {}", total);
         println!("═══════════════════════════════════════");
     }
+
+    /// Save all neural network weights to a binary file
+    pub fn save(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let mut all_weights = Vec::with_capacity(self.num_params());
+        for layer in &self.layers {
+            all_weights.extend_from_slice(&layer.weights.data);
+            all_weights.extend_from_slice(&layer.bias.data);
+        }
+        crate::training::checkpoint::save_weights(path, &all_weights)
+    }
+
+    /// Load weights from binary file and map them directly into memory
+    pub fn load(&mut self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let all_weights = crate::training::checkpoint::load_weights(path)?;
+
+        if all_weights.len() != self.num_params() {
+            return Err(format!(
+                "Model architecture mismatch. Expected {} params, got {} from file.",
+                self.num_params(),
+                all_weights.len()
+            )
+            .into());
+        }
+
+        let mut offset = 0;
+        for layer in &mut self.layers {
+            let w_len = layer.weights.data.len();
+            layer
+                .weights
+                .data
+                .copy_from_slice(&all_weights[offset..offset + w_len]);
+            offset += w_len;
+
+            let b_len = layer.bias.data.len();
+            layer
+                .bias
+                .data
+                .copy_from_slice(&all_weights[offset..offset + b_len]);
+            offset += b_len;
+        }
+
+        self.sync_caches();
+        Ok(())
+    }
 }
 
 impl Default for Sequential {

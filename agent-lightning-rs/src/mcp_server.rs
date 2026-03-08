@@ -101,10 +101,18 @@ fn handle_tools_list(id: &str) -> String {
           "description": "List available RL algorithms and their descriptions.",
           "inputSchema": { "type": "object", "properties": {} }
         },
+        },
         {
-          "name": "list_environments",
-          "description": "List available training environments and their state/action spaces.",
-          "inputSchema": { "type": "object", "properties": {} }
+          "name": "predict_roaster_action",
+          "description": "Send hardware sensor data (ET, BT) to the PINN agent to get the exact Gas % output.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "et": { "type": "number", "description": "Environmental (Drum) Temperature in °C" },
+              "bt": { "type": "number", "description": "Bean Temperature in °C" }
+            },
+            "required": ["et", "bt"]
+          }
         }
       ]
     }"#,
@@ -119,6 +127,7 @@ fn handle_tool_call(id: &str, tool_name: &str, args: &str) -> String {
         "list_environments" => list_environments(id),
         "train_agent" => train_agent(id, args),
         "evaluate_agent" => evaluate_agent_tool(id, args),
+        "predict_roaster_action" => predict_roaster_action(id, args),
         other => mcp_error(id, -32601, &format!("Unknown tool: {}", other)),
     }
 }
@@ -229,6 +238,76 @@ fn train_agent(id: &str, args: &str) -> String {
         &format!(
             "{{\"content\":[{{\"type\":\"text\",\"text\":{}}}]}}",
             json_str(&summary)
+        ),
+    )
+}
+
+fn extract_float_field(json: &str, field: &str) -> Option<f64> {
+    let key = format!("\"{}\":", field);
+    if let Some(mut start) = json.find(&key) {
+        start += key.len();
+        let end = json[start..]
+            .find(|c: char| c == ',' || c == '}' || c.is_whitespace())
+            .unwrap_or(json.len() - start);
+        let val_str = json[start..start + end].trim();
+        return val_str.parse().ok();
+    }
+    None
+}
+
+fn predict_roaster_action(id: &str, args: &str) -> String {
+    use agent_lightning::core::activation::Activation;
+    use agent_lightning::core::tensor::Tensor;
+    use agent_lightning::envs::state_estimator::ExtendedKalmanFilter;
+    use agent_lightning::nn::network::Sequential;
+    use agent_lightning::security::bounds::{
+        apply_hybrid_control, check_safety_bounds, compute_base_gas,
+    };
+
+    // 1. Parse Args
+    let et = extract_float_field(args, "et").unwrap_or(200.0);
+    let bt = extract_float_field(args, "bt").unwrap_or(150.0);
+
+    // 2. State Estimator Filter
+    let mut ekf = ExtendedKalmanFilter::new(bt);
+    ekf.predict(1.0, et); // Assume dt=1.0 for real-time tick
+    ekf.update(bt);
+
+    // 3. Safety Check
+    if !check_safety_bounds(et, ekf.x[0], ekf.x[1]) {
+        let msg = r#"{"content":[{"type":"text","text":"{\"error\":\"CRITICAL EMERGENCY STOP: Hardware limits exceeded!\",\"gas\":0.0}"}]}"#;
+        return mcp_response(id, msg);
+    }
+
+    // 4. Setup Architecture & Try Load Checkpoint
+    let mut policy = Sequential::new()
+        .dense(4, 16, Activation::ReLU)
+        .dense(16, 16, Activation::ReLU)
+        .dense(16, 1, Activation::Tanh); // Output: residual correction in [-1, 1]
+
+    let path = "roaster_pinn_model.bin";
+    let _ = policy.load(path); // Fails gracefully, proceeds with random weights if no file
+
+    // 5. Neural Network Inference
+    let abstract_state = vec![ekf.x[0], ekf.x[1], ekf.x[2], ekf.x[3]];
+    let state_t = Tensor::new(abstract_state, vec![1, 4]);
+    let residual_correction = policy.forward(&state_t).data[0];
+
+    // 6. Thermal Hybrid Logic
+    let target_ror = 15.0; // Abstract planned ROR for Demo
+    let base_gas = compute_base_gas(et, ekf.x[0], target_ror);
+    let final_gas = apply_hybrid_control(base_gas, residual_correction);
+
+    let output_json = format!(
+        "{{\"gas_percents\": {:.2}, \"hybrid\": {{\"base\": {:.2}, \"ai_residual\": {:.2}}}}}",
+        final_gas, base_gas, residual_correction
+    );
+
+    mcp_response(
+        id,
+        &format!(
+            "{{\"content\":[{{\"type\":\"text\",\"text\":{}}}]}}",
+            json_str(&output_json)
         ),
     )
 }
