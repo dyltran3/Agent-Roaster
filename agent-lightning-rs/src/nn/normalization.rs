@@ -24,9 +24,12 @@ impl LayerNorm {
         let std = (var + self.eps).sqrt();
 
         let mut out = Tensor::zeros(x.shape.clone());
+        let d_model = self.gamma.data.len();
         for i in 0..x.data.len() {
             let normalized = (x.data[i] - mean) / std;
-            out.data[i] = self.gamma.data[i] * normalized + self.beta.data[i];
+            // Ánh xạ index i (1D phẳng của ma trận 2D Seq x d_model) về index của biến d_model
+            let feature_idx = i % d_model;
+            out.data[i] = self.gamma.data[feature_idx] * normalized + self.beta.data[feature_idx];
         }
         out
     }
