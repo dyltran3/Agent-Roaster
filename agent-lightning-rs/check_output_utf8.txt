@@ -1,0 +1,565 @@
+cargo : warning: 
+value assigned to 
+`last_response` is 
+never read
+At line:1 char:1
++ cargo check 
+--features "agents,gua
+rdrails,roaster" > 
+check_output.txt ...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (warning: v   
+ alue ...` is neve    
+r read:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+   --> src\agents\rout
+ing.rs:103:33
+    |
+103 |           let 
+mut last_response = 
+Agen...
+    |  _______________
+__________________^
+104 | |             
+content: "Start of 
+loop"...
+105 | |             
+metadata: 
+serde_json::js...
+106 | |         };
+    | |_________^
+    |
+    = help: maybe it 
+is overwritten before 
+being read?
+    = note: `#[warn(un
+used_assignments)]` 
+(part of 
+`#[warn(unused)]`) on 
+by default
+
+warning: variable 
+does not need to be 
+mutable
+  --> src\guardrails\m
+od.rs:23:13
+   |
+23 | ...et mut 
+handles: V...
+   |       ----^^^^^^^
+   |       |
+   |       help: 
+remove this `mut`
+   |
+   = note: 
+`#[warn(unused_mut)]` 
+(part of 
+`#[warn(unused)]`) on 
+by default
+
+warning: unused 
+variable: `handles`
+  --> src\guardrails\m
+od.rs:23:13
+   |
+23 | ...et mut 
+handles: V...
+   |       
+^^^^^^^^^^^ help: if 
+this is intentional, 
+prefix it with an 
+underscore: `_handles`
+   |
+   = note: `#[warn(unu
+sed_variables)]` 
+(part of 
+`#[warn(unused)]`) on 
+by default
+
+warning: unused 
+variable: 
+`input_clone`
+  --> src\guardrails\m
+od.rs:25:17
+   |
+25 | ...et 
+input_clone = ...
+   |       
+^^^^^^^^^^^ help: if 
+this is intentional, 
+prefix it with an 
+underscore: 
+`_input_clone`
+
+warning: unused 
+variable: `ctx_clone`
+  --> src\guardrails\m
+od.rs:26:17
+   |
+26 | ...et ctx_clone 
+= ...
+   |       ^^^^^^^^^ 
+help: if this is 
+intentional, prefix 
+it with an 
+underscore: 
+`_ctx_clone`
+
+warning: unused 
+variable: 
+`guardrail_ref`
+  --> src\guardrails\m
+od.rs:31:17
+   |
+31 | ...et 
+guardrail_ref = ...
+   |       
+^^^^^^^^^^^^^ help: 
+if this is 
+intentional, prefix 
+it with an 
+underscore: 
+`_guardrail_ref`
+
+warning: 
+`agent-roaster` (lib) 
+generated 6 warnings 
+(run `cargo fix --lib 
+-p agent-roaster` to 
+apply 5 suggestions)
+    Checking 
+agent-roaster v0.1.0 (
+C:\Users\TuanAnh\OneDr
+ive\Documents\GitHub\A
+gent-Roaster\agent-lig
+htning-rs)
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+ --> src\main.rs:1:5
+  |
+1 | use agent_lightnin
+g::envs::cartpole::Car
+tPole;
+  |     
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+  |
+  = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+ --> src\main.rs:2:5
+  |
+2 | use agent_lightnin
+g::envs::coffee_roaste
+r::CoffeeRoasterEnv;
+  |     
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+  |
+  = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+ --> src\main.rs:3:5
+  |
+3 | use agent_lightnin
+g::envs::gridworld::Gr
+idWorld;
+  |     
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+  |
+  = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+ --> src\main.rs:4:5
+  |
+4 | use agent_lightnin
+g::training::coffee_da
+taset::CoffeeDataset;
+  |     
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+  |
+  = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+  --> src\main.rs:13:5
+   |
+13 | use agent_lightni
+ng::training::config::
+TrainingConfig;
+   |     
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+   |
+   = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+  --> src\main.rs:14:5
+   |
+14 | use agent_lightni
+ng::training::training
+_loop::{train_grpo, 
+train_hierarchical, 
+train_ppo};
+   |     
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+   |
+   = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:108:17
+    |
+108 |             use 
+agent_lightning::core:
+:activation::Activatio
+n;
+    |                 
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:109:17
+    |
+109 |             use 
+agent_lightning::core:
+:optimizer::{Adam, 
+Optimizer};
+    |                 
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:110:17
+    |
+110 |             use 
+agent_lightning::nn::n
+etwork::Sequential;
+    |                 
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:187:13
+    |
+187 |         use agen
+t_lightning::core::act
+ivation::Activation;
+    |             
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:188:13
+    |
+188 |         use agen
+t_lightning::core::ten
+sor::Tensor;
+    |             
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:189:13
+    |
+189 |         use agen
+t_lightning::envs::sta
+te_estimator::Extended
+KalmanFilter;
+    |             
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:190:13
+    |
+190 |         use agen
+t_lightning::nn::netwo
+rk::Sequential;
+    |             
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:191:13
+    |
+191 |         use agen
+t_lightning::security:
+:bounds::{
+    |             
+^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+
+error[E0433]: failed 
+to resolve: use of 
+unresolved module or 
+unlinked crate 
+`agent_lightning`
+   --> 
+src\main.rs:135:40
+    |
+135 |                 
+    let (loss, grad) 
+= agent_lightning::cor
+e::loss::physics_infor
+med_loss(
+    |                 
+                      
+ ^^^^^^^^^^^^^^^ use 
+of unresolved module 
+or unlinked crate 
+`agent_lightning`
+    |
+    = help: if you 
+wanted to use a crate 
+named 
+`agent_lightning`, 
+use `cargo add 
+agent_lightning` to 
+add it to your 
+`Cargo.toml`
+help: consider 
+importing this module
+    |
+  1 + use agent_roaste
+r::core::loss;
+    |
+help: if you import 
+`loss`, refer to it 
+directly
+    |
+135 -                 
+    let (loss, grad) 
+= agent_lightning::cor
+e::loss::physics_infor
+med_loss(
+135 +                 
+    let (loss, grad) 
+= loss::physics_inform
+ed_loss(
+    |
+
+For more information 
+about this error, try 
+`rustc --explain 
+E0433`.
+error: could not 
+compile 
+`agent-roaster` (bin 
+"agent-roaster") due 
+to 15 previous errors

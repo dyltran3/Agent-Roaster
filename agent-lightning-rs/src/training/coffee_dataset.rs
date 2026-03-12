@@ -14,10 +14,10 @@ pub struct CoffeeRoastingProfile {
 pub struct RoastingPoint {
     pub time: f64,
     pub temperature: f64,
-    pub pressure: f64,
-    pub gas_flow: f64,
-    pub drum_speed: f64,
-    pub target_temp: f64, // The "optimal" action from the expert profile
+    pub pressure: f64,    // Normalized or secondary temp
+    pub gas_flow: f64,    // gas_percent
+    pub drum_speed: f64,  // drum_rpm
+    pub target_temp: f64, // the expert action (next temperature or gas)
 }
 
 pub struct CoffeeDataset {
@@ -47,8 +47,13 @@ impl CoffeeDataset {
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
             let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("csv") {
+            let ext = path.extension().and_then(|s| s.to_str());
+            if ext == Some("csv") {
                 if let Ok(profile) = self.parse_csv(&path) {
+                    self.profiles.push(profile);
+                }
+            } else if ext == Some("json") {
+                if let Ok(profile) = self.parse_json(&path) {
                     self.profiles.push(profile);
                 }
             }
@@ -68,19 +73,102 @@ impl CoffeeDataset {
             .unwrap()
             .to_string();
 
-        for line in reader.lines().skip(1) {
-            // Skip header
+        let mut lines = reader.lines();
+        let header = match lines.next() {
+            Some(Ok(h)) => h,
+            _ => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Empty CSV",
+                ))
+            }
+        };
+
+        let cols: Vec<&str> = header.split(',').collect();
+        let find_idx = |name: &str| cols.iter().position(|&c| c == name);
+
+        // Detect if it's the new style or old style
+        let time_idx = find_idx("time_sec").or(find_idx("time")).unwrap_or(0);
+        let bt_idx = find_idx("bt_c").or(find_idx("temperature")).unwrap_or(1);
+        let et_idx = find_idx("et_c").or(find_idx("pressure")).unwrap_or(2);
+        let gas_idx = find_idx("gas_percent")
+            .or(find_idx("gas_flow"))
+            .unwrap_or(3);
+        let rpm_idx = find_idx("drum_rpm").or(find_idx("drum_speed")).unwrap_or(4);
+        let target_idx = find_idx("ror_bt").or(find_idx("target_temp")).unwrap_or(5);
+
+        for line in lines {
             let line = line?;
+            if line.trim().is_empty() {
+                continue;
+            }
             let parts: Vec<&str> = line.split(',').collect();
-            if parts.len() >= 6 {
+            if parts.len() > target_idx {
                 data_points.push(RoastingPoint {
-                    time: parts[0].parse().unwrap_or(0.0),
-                    temperature: parts[1].parse().unwrap_or(0.0),
-                    pressure: parts[2].parse().unwrap_or(0.0),
-                    gas_flow: parts[3].parse().unwrap_or(0.0),
-                    drum_speed: parts[4].parse().unwrap_or(0.0),
-                    target_temp: parts[5].parse().unwrap_or(0.0),
+                    time: parts[time_idx].parse().unwrap_or(0.0),
+                    temperature: parts[bt_idx].parse().unwrap_or(0.0),
+                    pressure: parts[et_idx].parse().unwrap_or(0.0),
+                    gas_flow: parts[gas_idx].parse().unwrap_or(0.0),
+                    drum_speed: parts[rpm_idx].parse().unwrap_or(0.0),
+                    target_temp: parts[target_idx].parse().unwrap_or(0.0),
                 });
+            }
+        }
+
+        Ok(CoffeeRoastingProfile { name, data_points })
+    }
+
+    /// Manual JSON parsing for roasting profiles (No Serde dependency)
+    fn parse_json<P: AsRef<Path>>(&self, path: P) -> std::io::Result<CoffeeRoastingProfile> {
+        let content = std::fs::read_to_string(path.as_ref())?;
+        let mut data_points = Vec::new();
+        let name = path
+            .as_ref()
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+
+        // Very basic manual extraction for "timeseries" array in the demo JSON
+        // Since we don't have Serde, we look for objects inside the timeseries block
+        if let Some(start_idx) = content.find("\"timeseries\": [") {
+            let timeseries_block = &content[start_idx..];
+            let mut current = timeseries_block;
+
+            while let Some(obj_start) = current.find("{") {
+                let obj_end = current.find("}").unwrap_or(current.len());
+                let obj = &current[obj_start..obj_end];
+
+                let get_val = |key: &str| -> f64 {
+                    let key_str = format!("\"{}\":", key);
+                    if let Some(k_idx) = obj.find(&key_str) {
+                        let val_part = &obj[k_idx + key_str.len()..];
+                        let val_str = val_part
+                            .split(|c| c == ',' || c == '}' || c == ' ' || c == '\n')
+                            .next()
+                            .unwrap_or("0");
+                        val_str.trim().parse().unwrap_or(0.0)
+                    } else {
+                        0.0
+                    }
+                };
+
+                data_points.push(RoastingPoint {
+                    time: get_val("time_sec"),
+                    temperature: get_val("bt_c"),
+                    pressure: get_val("et_c"),
+                    gas_flow: get_val("gas_percent"),
+                    drum_speed: get_val("drum_rpm"),
+                    target_temp: get_val("ror_bt"),
+                });
+
+                current = &current[obj_end + 1..];
+                if let Some(list_end) = current.find("]") {
+                    if list_end < current.find("{").unwrap_or(current.len() + 1) {
+                        break;
+                    }
+                }
             }
         }
 

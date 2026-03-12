@@ -4,6 +4,7 @@ use std::io::{self, Write};
 
 pub struct Dashboard {
     pub episodes: u64,
+    pub max_episodes: u64,
     pub cur_reward: f64,
     pub mean_reward: f64,
     pub loss: f64,
@@ -15,14 +16,15 @@ pub struct Dashboard {
 
 impl Default for Dashboard {
     fn default() -> Self {
-        Self::new()
+        Self::new(0)
     }
 }
 
 impl Dashboard {
-    pub fn new() -> Self {
+    pub fn new(max_episodes: u64) -> Self {
         Dashboard {
             episodes: 0,
+            max_episodes,
             cur_reward: 0.0,
             mean_reward: 0.0,
             loss: 0.0,
@@ -60,69 +62,125 @@ impl Dashboard {
     pub fn render(&self) {
         let mut stdout = io::stdout();
 
-        // Header
-        writeln!(stdout, "\x1B[H\x1B[1;36m═══════════════════════════════════════════════════════════════\x1B[0m").unwrap();
-        writeln!(
-            stdout,
-            "\x1B[1;37m  AGENT LIGHTNING \x1B[1;33m[Training Dashboard]\x1B[0m"
-        )
-        .unwrap();
-        writeln!(
-            stdout,
-            "\x1B[1;36m═══════════════════════════════════════════════════════════════\x1B[0m"
-        )
-        .unwrap();
+        // ANSI Color Constants
+        let c_border = "\x1B[38;5;239m"; // Dark gray border
+        let c_title = "\x1B[1;36m"; // Bright cyan
+        let c_hl = "\x1B[1;33m"; // Yellow highlight
+        let c_text = "\x1B[97m"; // Bright white text
+        let c_reset = "\x1B[0m";
 
-        // Metrics Table
-        writeln!(
-            stdout,
-            "  \x1B[1;37mStatus:\x1B[0m {:<15} | \x1B[1;37mVersion:\x1B[0m v{:<5}",
-            self.status, self.policy_version
-        )
-        .unwrap();
-        writeln!(
-            stdout,
-            "  \x1B[1;37mEpisodes:\x1B[0m {:<13} | \x1B[1;37mThroughput:\x1B[0m {:.2} ep/s",
-            self.episodes, self.throughput
-        )
-        .unwrap();
-        writeln!(
-            stdout,
-            "  \x1B[1;36m───────────────────────────────────────────────────────────────\x1B[0m"
-        )
-        .unwrap();
-
-        // Values
         let reward_color = if self.cur_reward > 0.0 {
             "\x1B[1;32m"
         } else {
             "\x1B[1;31m"
         };
+
+        // Top Border with Title
         writeln!(
             stdout,
-            "  Current Reward: {}{:>10.2}\x1B[0m | Mean (last 20): \x1B[1;34m{:>10.2}\x1B[0m",
-            reward_color, self.cur_reward, self.mean_reward
+            "\x1B[H{}╭─────────────────────────────────────────────────────────────╮{}",
+            c_border, c_reset
         )
         .unwrap();
         writeln!(
             stdout,
-            "  Policy Loss:    \x1B[1;35m{:>10.4}\x1B[0m",
-            self.loss
+            "{}│{}  ⚡ AGENT LIGHTNING {}Training Dashboard \x1B[32mv2.0         {}│{}",
+            c_border, c_title, c_text, c_border, c_reset
         )
         .unwrap();
         writeln!(
             stdout,
-            "  \x1B[1;36m───────────────────────────────────────────────────────────────\x1B[0m"
+            "{}├─────────────────────────────────────────────────────────────┤{}",
+            c_border, c_reset
         )
         .unwrap();
 
-        // ASCII Chart for Rewards
-        writeln!(stdout, "  \x1B[1;37mReward Trend (last 20):\x1B[0m").unwrap();
+        // Section 1: Progress & Status
+        let progress = if self.max_episodes > 0 {
+            (self.episodes as f64 / self.max_episodes as f64).clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+
+        let bar_width = 30;
+        let filled = (progress * bar_width as f64) as usize;
+        let empty = bar_width - filled;
+        let p_bar = format!(
+            "\x1B[42m{}\x1B[0m\x1B[48;5;238m{}\x1B[0m",
+            " ".repeat(filled),
+            " ".repeat(empty)
+        );
+
+        writeln!(
+            stdout,
+            "{}│{}  Status:     {} {:0.1}%",
+            c_border,
+            c_hl,
+            p_bar,
+            progress * 100.0
+        )
+        .unwrap();
+        writeln!(
+            stdout,
+            "{}│{}  Mode:       {} {:<37} {}│{}",
+            c_border, c_text, c_hl, self.status, c_border, c_reset
+        )
+        .unwrap();
+        writeln!(
+            stdout,
+            "{}│{}  Episodes:   {} {} / {} ({:.2} ep/s)               {}│{}",
+            c_border,
+            c_text,
+            c_reset,
+            self.episodes,
+            self.max_episodes,
+            self.throughput,
+            c_border,
+            c_reset
+        )
+        .unwrap();
+
+        writeln!(
+            stdout,
+            "{}├─────────────────────────────────────────────────────────────┤{}",
+            c_border, c_reset
+        )
+        .unwrap();
+
+        // Section 2: Metrics
+        writeln!(
+            stdout,
+            "{}│{}  Current Reward: {}{:>10.2}{} | Mean (L20): \x1B[34m{:>10.2}{}",
+            c_border, c_text, reward_color, self.cur_reward, c_text, self.mean_reward, c_reset
+        )
+        .unwrap();
+        writeln!(
+            stdout,
+            "{}│{}  Policy Loss:    \x1B[35m{:>10.4}{} | Policy Ver: \x1B[33mv{:<5}{}",
+            c_border, c_text, self.loss, c_text, self.policy_version, c_reset
+        )
+        .unwrap();
+
+        writeln!(
+            stdout,
+            "{}├─────────────────────────────────────────────────────────────┤{}",
+            c_border, c_reset
+        )
+        .unwrap();
+
+        // Chart Header
+        writeln!(
+            stdout,
+            "{}│{}  Reward Trend (Last 20)                              {}│{}",
+            c_border, c_text, c_border, c_reset
+        )
+        .unwrap();
         self.render_chart(&mut stdout);
 
         writeln!(
             stdout,
-            "\x1B[1;36m═══════════════════════════════════════════════════════════════\x1B[0m"
+            "{}╰─────────────────────────────────────────────────────────────╯{}",
+            c_border, c_reset
         )
         .unwrap();
         stdout.flush().unwrap();
@@ -130,11 +188,15 @@ impl Dashboard {
 
     fn render_chart(&self, stdout: &mut io::Stdout) {
         if self.history_rewards.is_empty() {
+            writeln!(
+                stdout,
+                "│                                                             │"
+            )
+            .unwrap();
             return;
         }
 
         let height = 5;
-        let _width = 40;
         let min = self
             .history_rewards
             .iter()
@@ -152,7 +214,7 @@ impl Dashboard {
         };
 
         for y in (0..height).rev() {
-            write!(stdout, "    ").unwrap();
+            write!(stdout, "\x1B[38;5;239m│\x1B[0m    ").unwrap();
             let threshold = min + (y as f64 / height as f64) * diff;
 
             for &val in &self.history_rewards {

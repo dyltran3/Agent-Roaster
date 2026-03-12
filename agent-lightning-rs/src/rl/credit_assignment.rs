@@ -111,7 +111,11 @@ pub fn normalize_advantages(transitions: &mut [Transition]) {
 
     for transition in transitions.iter_mut() {
         for adv in transition.advantages.iter_mut() {
-            *adv = (*adv - mean) / std;
+            if std < 1e-4 {
+                *adv = 0.0; // Prevent explosion if variance is extremely low
+            } else {
+                *adv = (*adv - mean) / std;
+            }
         }
     }
 }

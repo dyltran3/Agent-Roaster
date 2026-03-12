@@ -1,0 +1,39 @@
+﻿
+running 20 tests
+test core::activation::tests::test_sigmoid_range ... ok
+test core::activation::tests::test_relu ... ok
+test core::activation::tests::test_softmax_sum_to_one ... ok
+test core::loss::tests::test_huber_small_error ... ok
+test core::loss::tests::test_sparse_cross_entropy ... ok
+test core::loss::tests::test_mse_zero ... ok
+test core::optimizer::tests::test_sgd_decreases_param ... ok
+test core::optimizer::tests::test_adam_decreases_param ... ok
+test core::tensor::tests::test_add ... ok
+test core::tensor::tests::test_normalize ... ok
+test core::tensor::tests::test_matmul ... FAILED
+test core::tensor::tests::test_tensor_creation ... ok
+test core::tensor::tests::test_transpose ... ok
+test envs::state_estimator::tests::test_ekf_roast_simulation ... ok
+test nn::layer::tests::test_linear_backward_produces_gradients ... ok
+test nn::layer::tests::test_linear_forward_shape ... ok
+test nn::network::tests::test_sequential_forward ... ok
+test nn::network::tests::test_sequential_backward ... ok
+test nn::attention::tests::test_mha_forward_shape ... ok
+test nn::transformer::tests::test_transformer_block_forward_shape ... ok
+
+failures:
+
+---- core::tensor::tests::test_matmul stdout ----
+
+thread 'core::tensor::tests::test_matmul' (31268) panicked at src\core\tensor.rs:562:9:
+assertion `left == right` failed
+  left: 154.0
+ right: 136.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    core::tensor::tests::test_matmul
+
+test result: FAILED. 19 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+

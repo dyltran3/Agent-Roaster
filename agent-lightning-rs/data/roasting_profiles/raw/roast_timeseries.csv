@@ -1,0 +1,19 @@
+time_sec,time_label,phase,bt_c,et_c,drum_temp_c,drum_rpm,air_flow_percent,gas_percent,ror_bt,pid_setpoint,pid_output_percent,pid_error,pid_p,pid_i,pid_d,notes
+0,0:00,CHARGE,200.0,225.0,218.0,50,30,85,0.0,130.0,85.0,-70.0,3.2,0.0,0.0,Nạp liệu 120kg - ET/Drum cao bù nhiệt tải lạnh
+30,0:30,DRYING,145.0,210.0,205.0,50,30,85,22.4,130.0,85.0,15.0,48.0,0.5,-12.0,BT giảm nhanh do hấp thụ nhiệt
+60,1:00,DRYING,102.0,196.0,192.0,50,30,80,12.1,130.0,80.0,28.0,89.6,1.2,-8.4,BT tiếp tục giảm - gần Turning Point
+75,1:15,TURNING_POINT,92.0,190.0,186.0,50,30,80,0.0,135.0,80.0,43.0,137.6,2.1,0.0,TURNING POINT - ROR = 0 BT bắt đầu tăng
+120,2:00,DRYING,103.0,188.0,184.0,48,35,78,8.8,140.0,78.0,37.0,118.4,3.5,2.1,BT phục hồi - ROR ổn định tăng
+180,3:00,DRYING,122.0,186.0,182.0,46,40,72,14.2,148.0,72.0,26.0,83.2,5.8,-1.4,ROR đang cao - giảm gas để kiểm soát
+240,4:00,DRYING,148.0,187.0,183.0,44,45,65,16.8,155.0,65.0,7.0,22.4,7.2,3.8,YELLOWING - hạt vàng Maillard bắt đầu
+270,4:30,MAILLARD,156.0,188.0,184.0,44,50,62,13.5,162.0,62.0,6.0,19.2,8.1,-1.6,Vào giai đoạn Maillard - ROR bắt đầu ổn định
+330,5:30,MAILLARD,164.0,189.0,185.0,44,52,60,10.8,169.0,60.0,5.0,16.0,8.9,-0.8,ROR giảm nhẹ - trong zone Maillard lý tưởng
+390,6:30,MAILLARD,171.0,190.0,186.0,43,55,58,9.6,176.0,58.0,5.0,16.0,9.6,0.6,Kiểm soát tốt - ROR 9.6 trong target 8-10
+450,7:30,MAILLARD,178.0,191.0,187.0,43,58,56,9.2,183.0,56.0,5.0,16.0,10.2,0.3,ROR ổn định - Maillard sâu đang diễn ra
+510,8:30,MAILLARD,184.0,192.0,188.0,42,60,55,8.8,189.0,55.0,5.0,16.0,10.8,0.2,Chuẩn bị vào vùng FC - air tăng dần
+570,9:30,DEVELOPMENT,192.0,208.0,204.0,40,65,52,8.5,196.0,52.0,4.0,12.8,11.4,0.5,Cận FC - tăng ET/Drum nhẹ để đẩy vào FC
+615,10:15,FIRST_CRACK_START,196.0,210.0,206.0,40,68,45,7.8,200.0,45.0,4.0,12.8,11.9,-1.8,FIRST CRACK START - giảm gas mạnh để kiểm soát
+645,10:45,FIRST_CRACK_ROLLING,200.0,212.0,208.0,38,70,42,7.5,205.0,42.0,5.0,16.0,12.2,0.8,FC ROLLING - development phase chính thức
+675,11:15,DEVELOPMENT,203.0,213.0,209.0,38,72,40,7.2,207.0,40.0,4.0,12.8,12.5,-0.4,Development tốt - ROR giảm nhẹ đúng kế hoạch
+705,11:45,DEVELOPMENT,205.5,213.5,210.0,38,75,38,6.8,208.0,38.0,2.5,8.0,12.8,-0.2,Chuẩn bị DROP - air max để làm chậm nhiệt
+720,12:00,DROP,207.0,214.0,210.5,38,80,0,6.5,207.0,0.0,0.0,0.0,0.0,0.0,DROP - xuất hàng Gas tắt hoàn toàn

@@ -54,9 +54,8 @@ impl LightningRL {
                 CreditMode::GAE => {
                     // For GAE, we need value estimates.
                     // This is currently handled inside the specific PPO implementation if needed,
-                    // but here we can support a generic GAE if we have the values.
-                    // For now, default to Uniform in this generic layer or throw if not implemented.
-                    credit_assignment::assign_uniform_credit(episode);
+                    // If called generally, fallback to Discounted to avoid Uniform explosions.
+                    credit_assignment::assign_discounted_credit(episode, self.config.gamma);
                 }
             }
             all_transitions.extend(episode.clone());

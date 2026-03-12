@@ -1,27 +1,38 @@
 [package]
-name = "agent-lightning-rs"
+name = "agent-roaster"
 version = "0.1.0"
 edition = "2021"
-authors = ["Agent Lightning Rust"]
-description = "A from-scratch Reinforcement Learning agent training framework inspired by Microsoft Agent Lightning"
-default-run = "agent-lightning"
-
-[[bin]]
-name = "agent-lightning"
-path = "src/main.rs"
-
-[[bin]]
-name = "mcp-server"
-path = "src/mcp_server.rs"
+authors = ["Agent-Roaster Team"]
+description = "An ultra-fast, memory-safe AI Agent Framework in Rust."
 
 [lib]
-name = "agent_lightning"
+name = "agent_roaster"
 path = "src/lib.rs"
 
-# ZERO external dependencies — pure Rust stdlib only.
-# rand removed because rand 0.8 pulls zerocopy which needs proc-macros.
-# Random number generation is handled by our own LCG in core/tensor.rs.
 [dependencies]
+# Core async and serialization
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+futures = "0.3"
+async-trait = "0.1"
+log = "0.4"
+regex = "1.0"
+
+# Optional features
+reqwest = { version = "0.11", features = ["json", "stream"], optional = true }
+tokio-tungstenite = { version = "0.20", optional = true }
+webrtc = { version = "0.10", optional = true }
+uuid = { version = "1.0", features = ["v4"], optional = true }
+
+[features]
+default = ["agents", "guardrails"]
+agents = []
+guardrails = []
+realtime = ["tokio-tungstenite", "webrtc", "uuid"]
+providers = ["reqwest"]
+roaster = []
 
 [profile.release]
 opt-level = 3

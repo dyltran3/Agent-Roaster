@@ -6,6 +6,7 @@ use crate::rl::transition::Transition;
 ///
 /// Uses std::sync::mpsc (synchronous) — no tokio/async required.
 use std::collections::VecDeque;
+use std::mem;
 use std::sync::mpsc::{Receiver, Sender};
 
 #[derive(Debug, Default, Clone)]
@@ -97,8 +98,8 @@ impl LightningServer {
                     // Typically the client might pass some signals, or we use a RewardShaper.
                     // For now, we take the provided rewards.
 
-                    self.episode_buffer
-                        .push(std::mem::take(&mut self.current_episode));
+                    let episode = mem::take(&mut self.current_episode);
+                    self.episode_buffer.push(episode);
                 }
 
                 self.reward_history.push_back(total_reward);

@@ -1,7 +1,7 @@
-use agent_lightning::envs::cartpole::CartPole;
-use agent_lightning::envs::coffee_roaster::CoffeeRoasterEnv;
-use agent_lightning::envs::gridworld::GridWorld;
-use agent_lightning::training::coffee_dataset::CoffeeDataset;
+use agent_roaster::envs::cartpole::CartPole;
+use agent_roaster::envs::coffee_roaster::CoffeeRoasterEnv;
+use agent_roaster::envs::gridworld::GridWorld;
+use agent_roaster::training::coffee_dataset::CoffeeDataset;
 /// Agent Lightning RS — Entry Point & Demo
 ///
 /// Demonstrates all three algorithms:
@@ -10,8 +10,8 @@ use agent_lightning::training::coffee_dataset::CoffeeDataset;
 ///   3. LightningRL (Hierarchical) on GridWorld
 ///
 /// Run with: cargo run --release
-use agent_lightning::training::config::TrainingConfig;
-use agent_lightning::training::training_loop::{train_grpo, train_hierarchical, train_ppo};
+use agent_roaster::training::config::TrainingConfig;
+use agent_roaster::training::training_loop::{train_grpo, train_hierarchical, train_ppo};
 
 fn main() {
     println!("╔═══════════════════════════════════════════════════════════════╗");
@@ -86,112 +86,109 @@ fn main() {
 
     println!("\n\n━━━  Data Layer: Coffee Roasting Profiles Analysis  ━━━━━━━━━━━\n");
     let raw_data_dir = "data/roasting_profiles/raw";
+    let processed_data_dir = "data/roasting_profiles/processed";
     let mut coffee_db = CoffeeDataset::new();
-    match coffee_db.load_from_dir(raw_data_dir) {
-        Ok(_) => {
-            println!(
-                "  [INFO] Discovered {} expert roasting profiles.",
-                coffee_db.profiles.len()
-            );
-            let transitions = coffee_db.to_transitions();
-            println!(
-                "  [INFO] Extracted {} token-level transitions for training.",
-                transitions.len()
-            );
+    let _ = coffee_db.load_from_dir(raw_data_dir);
+    let _ = coffee_db.load_from_dir(processed_data_dir);
 
-            if !transitions.is_empty() {
-                println!("\n  [EVALUATION] Starting Offline RL (Behavioral Cloning) with strict constraints...");
+    if !coffee_db.profiles.is_empty() {
+        println!(
+            "  [INFO] Discovered {} expert roasting profiles.",
+            coffee_db.profiles.len()
+        );
+        let transitions = coffee_db.to_transitions();
+        println!(
+            "  [INFO] Extracted {} token-level transitions for training.",
+            transitions.len()
+        );
 
-                use agent_lightning::core::activation::Activation;
-                use agent_lightning::core::optimizer::{Adam, Optimizer};
-                use agent_lightning::nn::network::Sequential;
+        if !transitions.is_empty() {
+            println!("\n  [EVALUATION] Starting Offline RL (Behavioral Cloning) with strict constraints...");
 
-                // 1. Build a Neural Network for prediction (5 state variables -> 1 target_temp)
-                let mut policy = Sequential::new()
-                    .dense(5, 16, Activation::ReLU)
-                    .dense(16, 16, Activation::ReLU)
-                    .dense(16, 1, Activation::Linear); // Output: Target Temp
+            use agent_roaster::core::activation::Activation;
+            use agent_roaster::core::optimizer::{Adam, Optimizer};
+            use agent_roaster::nn::network::Sequential;
 
-                let mut optimizer = Adam::new(1e-3).with_betas(0.9, 0.999);
-                let epochs = 300;
+            // 1. Build a Neural Network for prediction (5 state variables -> 1 target_temp)
+            let mut policy = Sequential::new()
+                .dense(5, 16, Activation::ReLU)
+                .dense(16, 16, Activation::ReLU)
+                .dense(16, 1, Activation::Linear); // Output: Target Temp
 
-                for epoch in 1..=epochs {
-                    let mut total_loss = 0.0;
+            let mut optimizer = Adam::new(1e-3).with_betas(0.9, 0.999);
+            let epochs = 300;
 
-                    for transition in &transitions {
-                        // Forward with cache for backprop
-                        let (pred, caches) = policy.forward_with_cache(&transition.input);
+            for epoch in 1..=epochs {
+                let mut total_loss = 0.0;
 
-                        // Extract physical context (assuming mock parsing from dataset)
-                        let et = transition.input.data.get(0).copied().unwrap_or(200.0);
-                        let bt = transition.input.data.get(1).copied().unwrap_or(150.0);
-                        let target_pred = pred.data[0];
-                        let target_ror = target_pred - bt; // abstract projection
+                for transition in &transitions {
+                    // Forward with cache for backprop
+                    let (pred, caches) = policy.forward_with_cache(&transition.input);
 
-                        // Compute Loss (Physics-Informed Edge AI)
-                        let (loss, grad) = agent_lightning::core::loss::physics_informed_loss(
-                            &pred,
-                            &transition.output,
-                            et,
-                            bt,
-                            target_ror,
-                            0.05,
-                        );
-                        total_loss += loss;
+                    // Extract physical context (assuming mock parsing from dataset)
+                    let et = transition.input.data.get(0).copied().unwrap_or(200.0);
+                    let bt = transition.input.data.get(1).copied().unwrap_or(150.0);
+                    let target_pred = pred.data[0];
+                    let target_ror = target_pred - bt; // abstract projection
 
-                        // Backprop via Framework Standard
-                        policy.zero_grad();
-                        policy.backward(&grad, &caches);
+                    // Compute Loss (Physics-Informed Edge AI)
+                    let (loss, grad) = agent_roaster::core::loss::physics_informed_loss(
+                        &pred,
+                        &transition.output,
+                        et,
+                        bt,
+                        target_ror,
+                        0.05,
+                    );
+                    total_loss += loss;
 
-                        // Optimize
-                        let mut params = policy.collect_params();
-                        optimizer.step(&mut params);
-                        policy.sync_caches();
-                    }
+                    // Backprop via Framework Standard
+                    policy.zero_grad();
+                    policy.backward(&grad, &caches);
 
-                    if epoch % 50 == 0 || epoch == 1 {
-                        println!(
-                            "    -> Epoch {:3} | MSE Loss: {:.4}",
-                            epoch,
-                            total_loss / transitions.len() as f64
-                        );
-                    }
+                    // Optimize
+                    let mut params = policy.collect_params();
+                    optimizer.step(&mut params);
+                    policy.sync_caches();
                 }
 
-                println!("\n  [EVALUATION REPORT]");
-                // Test the first transition
-                let test_state = &transitions[0].input;
-                let test_target = &transitions[0].output.data[0];
-                let pred_target = policy.forward(test_state).data[0];
-
-                println!("    * State Input: {:.2?}", test_state.data);
-                println!("    * Expert Target Temp : {:.2} °C", test_target);
-                println!("    * AI Predicted Temp  : {:.2} °C", pred_target);
-                let error = (test_target - pred_target).abs();
-                println!("    * Absolute Error     : {:.2} °C", error);
-
-                if error > 5.0 {
-                    println!("\n  [VERDICT] ❌ Model struggle to memorize the sequence. The pure linear network might be too weak (underfitting) or lacks non-linear activation like GELU to represent complex thermal dynamics.");
-                } else {
-                    println!("\n  [VERDICT] ✅ Model successfully cloned the expert profile within acceptable margin. Evaluation Passed!");
+                if epoch % 50 == 0 || epoch == 1 {
+                    println!(
+                        "    -> Epoch {:3} | MSE Loss: {:.4}",
+                        epoch,
+                        total_loss / transitions.len() as f64
+                    );
                 }
             }
 
-            if coffee_db.profiles.is_empty() {
-                println!("  [TIP] Add .csv profiles to: {}", raw_data_dir);
+            println!("\n  [EVALUATION REPORT]");
+            // Test the first transition
+            let test_state = &transitions[0].input;
+            let test_target = &transitions[0].output.data[0];
+            let pred_target = policy.forward(test_state).data[0];
+
+            println!("    * State Input: {:.2?}", test_state.data);
+            println!("    * Expert Target Temp : {:.2} °C", test_target);
+            println!("    * AI Predicted Temp  : {:.2} °C", pred_target);
+            let error = (test_target - pred_target).abs();
+            println!("    * Absolute Error     : {:.2} °C", error);
+
+            if error > 5.0 {
+                println!("\n  [VERDICT] ❌ Model struggle to memorize the sequence. The pure linear network might be too weak (underfitting) or lacks non-linear activation like GELU to represent complex thermal dynamics.");
+            } else {
+                println!("\n  [VERDICT] ✅ Model successfully cloned the expert profile within acceptable margin. Evaluation Passed!");
             }
         }
-        Err(e) => println!("  [ERROR] Failed to load coffee profiles: {}", e),
     }
 
     // ── Demo 4: End-To-End PINN Inference Workflow (Gray-box AI) ────────────────
     println!("\n\n━━━  Demo 4: End-To-End PINN Inference Workflow (Gray-box AI)  ━━━━\n");
     {
-        use agent_lightning::core::activation::Activation;
-        use agent_lightning::core::tensor::Tensor;
-        use agent_lightning::envs::state_estimator::ExtendedKalmanFilter;
-        use agent_lightning::nn::network::Sequential;
-        use agent_lightning::security::bounds::{
+        use agent_roaster::core::activation::Activation;
+        use agent_roaster::core::tensor::Tensor;
+        use agent_roaster::envs::state_estimator::ExtendedKalmanFilter;
+        use agent_roaster::nn::network::Sequential;
+        use agent_roaster::security::bounds::{
             apply_hybrid_control, check_safety_bounds, compute_base_gas,
         };
 

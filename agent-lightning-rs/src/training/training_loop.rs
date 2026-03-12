@@ -8,6 +8,7 @@ use crate::rl::lightning_rl::{
 };
 use crate::rl::ppo::{PPOAgent, PPOConfig};
 use crate::training::config::TrainingConfig;
+use crate::training::exporter::TrainingExporter;
 use crate::training::logger::Logger;
 use crate::ui::dashboard::Dashboard;
 
@@ -49,8 +50,10 @@ pub fn train_ppo(
     let mut client = LightningClient::new(0, channels.client_tx, channels.server_rx);
 
     let logger = Logger::new();
-    let mut dashboard = Dashboard::new();
+    let mut dashboard = Dashboard::new(cfg.total_episodes as u64);
     dashboard.status = format!("Training on {}", env.name());
+
+    let mut exporter = TrainingExporter::new("ppo_agent");
 
     logger.print_header("Agent Lightning PPO (Disaggregated)", env.name());
 
@@ -72,12 +75,15 @@ pub fn train_ppo(
             };
 
             let (action, log_prob, _value_est) = actor.select_action(&state);
-            let result = env.step(action);
+
+            // --- Edge Safety Override ---
+            let safe_action = client.safeguard_action(&state, action);
+            let result = env.step(safe_action);
             total_reward += result.reward;
 
             // Trace to server: Unified MDP Transition
             let input = crate::core::tensor::Tensor::new(state.clone(), vec![1, state.len()]);
-            let output = crate::core::tensor::Tensor::new(vec![action as f64], vec![1]);
+            let output = crate::core::tensor::Tensor::new(vec![safe_action as f64], vec![1]);
             let transition = crate::rl::transition::Transition::new(
                 input,
                 output,
@@ -94,8 +100,10 @@ pub fn train_ppo(
         // --- SERVER SIDE: Training ---
         server.process_messages(&channels.client_rx);
 
-        // Update UI
+        // Update UI and Exporter
         dashboard.update(total_reward, 0.0, server.stats.policy_version as u32);
+        exporter.add_record(episode as u64, total_reward, 0.0);
+
         // Render every episode for real-time feel
         dashboard.render();
 
@@ -119,6 +127,7 @@ pub fn train_ppo(
     }
 
     logger.print_footer();
+    let _ = exporter.export();
 
     // Extract Agent (Destructure TrainerType)
     match server.trainer.unwrap().trainer {
@@ -170,16 +179,25 @@ pub fn train_grpo(env: &mut dyn Environment, cfg: &TrainingConfig) {
                 _ => panic!("No GRPO trainer"),
             };
             let action = agent.select_action(&state);
+
+            // Note: In GRPO simulation, we don't have a formal client struct instance
+            // inside this loop yet, but we apply the same safety heuristic.
+            let safe_action = if state.len() >= 2 && state[0] > 195.0 && state[1] > 8.0 {
+                0 // Safety override
+            } else {
+                action
+            };
+
             let state_t = crate::core::tensor::Tensor::new(state.clone(), vec![1, state.len()]);
             let probs = agent.policy.forward(&state_t);
-            let log_prob = (probs.data[action] + 1e-10).ln();
+            let log_prob = (probs.data[safe_action] + 1e-10).ln();
 
-            let result = env.step(action);
+            let result = env.step(safe_action);
             total_reward += result.reward;
 
             transitions.push(crate::rl::transition::Transition::new(
                 state_t,
-                crate::core::tensor::Tensor::new(vec![action as f64], vec![1]),
+                crate::core::tensor::Tensor::new(vec![safe_action as f64], vec![1]),
                 vec![log_prob],
                 vec![result.reward],
             ));

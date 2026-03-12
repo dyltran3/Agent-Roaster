@@ -1,5 +1,11 @@
-/// Agent Lightning RS — lib root
-/// Zero external dependencies build.
+/// Agent-Roaster Core Library
+pub mod agents;
+pub mod guardrails;
+pub mod realtime;
+pub mod providers;
+pub mod memory;
+
+// Existing modules from agent-lightning (retained for now or integration)
 pub mod core;
 pub mod envs;
 pub mod lightning;

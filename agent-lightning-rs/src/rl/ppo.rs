@@ -178,7 +178,10 @@ impl PPOAgent {
                     let prob = probs_out.data[i * action_dim + action_idx].max(1e-10);
                     new_log_probs_data.push(prob.ln());
                     old_log_probs_data.push(transition.log_probs[i]);
-                    advantages_data.push(transition.advantages[i]);
+
+                    // Scale/Clip Advantage to avoid gradient explosions from extreme rewards (-900)
+                    let clipped_adv = transition.advantages[i].clamp(-5.0, 5.0);
+                    advantages_data.push(clipped_adv);
                 }
 
                 let new_lp_t = Tensor::new(new_log_probs_data, vec![n_tokens]);
@@ -266,6 +269,9 @@ impl PPOAgent {
             self.config.gamma,
             self.config.lambda,
         );
+
+        // Explicitly normalize advantages to prevent explosion in local updates
+        crate::rl::credit_assignment::normalize_advantages(std::slice::from_mut(&mut transition));
 
         // Finalize for the transition
         let transitions = vec![transition];

@@ -559,7 +559,7 @@ mod tests {
         let c = a.matmul(&b);
         assert_eq!(c.shape, vec![2, 2]);
         assert_eq!(c.data[0], 58.0); // 1*7 + 2*9 + 3*11
-        assert_eq!(c.data[3], 136.0); // 4*8 + 5*10 + 6*12
+        assert_eq!(c.data[3], 154.0); // 4*8 + 5*10 + 6*12
     }
 
     #[test]

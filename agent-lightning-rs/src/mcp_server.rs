@@ -8,12 +8,12 @@
 use std::io::{self, BufRead, Write};
 use std::time::Instant;
 
-use agent_lightning::envs::cartpole::CartPole;
-use agent_lightning::envs::gridworld::GridWorld;
-use agent_lightning::rl::env::Environment;
-use agent_lightning::rl::grpo::{GRPOAgent, GRPOConfig};
-use agent_lightning::rl::hierarchical::{LightningRLAgent, LightningRLConfig};
-use agent_lightning::rl::ppo::{PPOAgent, PPOConfig};
+use agent_roaster::envs::cartpole::CartPole;
+use agent_roaster::envs::gridworld::GridWorld;
+use agent_roaster::rl::env::Environment;
+use agent_roaster::rl::grpo::{GRPOAgent, GRPOConfig};
+use agent_roaster::rl::hierarchical::{LightningRLAgent, LightningRLConfig};
+use agent_roaster::rl::ppo::{PPOAgent, PPOConfig};
 
 // ─── MCP Protocol Types (JSON-RPC 2.0) ───────────────────────────────────────
 
@@ -256,11 +256,11 @@ fn extract_float_field(json: &str, field: &str) -> Option<f64> {
 }
 
 fn predict_roaster_action(id: &str, args: &str) -> String {
-    use agent_lightning::core::activation::Activation;
-    use agent_lightning::core::tensor::Tensor;
-    use agent_lightning::envs::state_estimator::ExtendedKalmanFilter;
-    use agent_lightning::nn::network::Sequential;
-    use agent_lightning::security::bounds::{
+    use agent_roaster::core::activation::Activation;
+    use agent_roaster::core::tensor::Tensor;
+    use agent_roaster::envs::state_estimator::ExtendedKalmanFilter;
+    use agent_roaster::nn::network::Sequential;
+    use agent_roaster::security::bounds::{
         apply_hybrid_control, check_safety_bounds, compute_base_gas,
     };
 
@@ -342,8 +342,8 @@ fn evaluate_agent_tool(id: &str, args: &str) -> String {
     }
 
     // Evaluate greedily
-    use agent_lightning::core::tensor::Tensor;
-    use agent_lightning::rl::ppo::greedy_action;
+    use agent_roaster::core::tensor::Tensor;
+    use agent_roaster::rl::ppo::greedy_action;
     let mut total = 0.0f64;
     for _ in 0..eval_eps {
         let mut state = eval_env.reset();

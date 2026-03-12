@@ -41,6 +41,9 @@ pub struct LightningClient {
     pub step_count: u64,
     pub episode_id: u64,
     paused: bool,
+    // --- Edge Safety: Flick Detection ---
+    last_ror: f64,
+    last_accel: f64,
 }
 
 impl LightningClient {
@@ -57,7 +60,40 @@ impl LightningClient {
             step_count: 0,
             episode_id: 0,
             paused: false,
+            last_ror: 0.0,
+            last_accel: 0.0,
         }
+    }
+
+    /// Real-Time Edge Safety: Safeguard proposed action against Flicks
+    /// Intercepts ROR values locally and overrides gas if a flick is detected post-FC.
+    pub fn safeguard_action(&mut self, state: &[f64], proposed_action: usize) -> usize {
+        if state.len() < 2 {
+            return proposed_action;
+        }
+
+        let bt = state[0];
+        let ror = state[1];
+        let accel = ror - self.last_ror;
+
+        // Flick Detection Heuristic:
+        // 1. Post-First Crack window (BT > 195C)
+        // 2. ROR is increasing (accel > 0)
+        // 3. ROR is already high enough to be risky (> 8.0)
+        let is_flicking = bt > 195.0 && accel > 0.1 && ror > 8.0;
+
+        self.last_ror = ror;
+        self.last_accel = accel;
+
+        if is_flicking {
+            // Overrule Server Policy: Proactively drop gas (Action 0 is "Decrease")
+            if proposed_action != 0 {
+                self.record_error("FLICK_DETECTED_OVERRIDE".to_string());
+                return 0;
+            }
+        }
+
+        proposed_action
     }
 
     /// Record one agent reasoning/action transition and send to training server
